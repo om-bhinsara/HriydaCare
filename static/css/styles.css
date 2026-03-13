@@ -1,0 +1,323 @@
+:root {
+    /* Backgrounds */
+    --bg-dark: #0B0E14;       /* Deepest Navy/Black */
+    --card-bg: #151A23;       /* Slightly Lighter Navy Card */
+    --input-bg: #1C222E;
+    
+    /* Brand Colors */
+    --primary: #3B82F6;       /* Electric Blue (Like "Add Plan" button) */
+    --primary-grad: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+    --accent: #EF4444;        /* Red (Like "Insights" text) */
+    
+    /* Text */
+    --text-main: #FFFFFF;
+    --text-muted: #94A3B8;
+    
+    /* Status */
+    --success: #10B981;
+    --warning: #F59E0B;
+    
+    /* UI Elements */
+    --radius-card: 24px;      /* Very rounded cards */
+    --radius-btn: 16px;
+    --ring-len: 754;
+    --glow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+}
+
+.main-app {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 20px 24px 40px;
+}
+
+/* --- HEADER --- */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 30px;
+}
+
+.app-logo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.logo-accent {
+    color: var(--accent); /* Red color for 'Care' */
+}
+
+.profile-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--card-bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: var(--primary);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* --- TYPOGRAPHY --- */
+h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text-main);
+}
+
+p {
+    color: var(--text-muted);
+    line-height: 1.6;
+    font-size: 0.95rem;
+    margin-top: 0;
+}
+
+/* --- BUTTONS (Electric Blue Pill Shape) --- */
+.btn {
+    background: var(--primary-grad);
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: var(--radius-btn);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2); /* Blue shadow */
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn:active { transform: scale(0.98); }
+
+.btn-outline {
+    background: transparent !important;
+    border: 2px solid #334155 !important;
+    box-shadow: none !important;
+    color: var(--text-muted) !important;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin-bottom: 15px;
+    padding-left: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+.back-btn:hover { color: var(--text-main); }
+
+/* --- INPUTS --- */
+.input-wrapper {
+    background: var(--input-bg);
+    border-radius: 16px;
+    padding: 4px;
+    border: 1px solid rgba(255,255,255,0.05);
+    margin-top: 15px;
+}
+
+input {
+    width: 100%;
+    padding: 14px 16px;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1rem;
+    outline: none;
+    font-family: inherit;
+}
+
+input::placeholder { color: #64748B; }
+
+.suggestions-list {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    border-radius: 16px;
+    max-height: 180px;
+    overflow-y: auto;
+    background: var(--card-bg);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.suggestions-list li {
+    padding: 12px 16px;
+    cursor: pointer;
+    color: var(--text-muted);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.suggestions-list li:hover { background: rgba(255,255,255,0.05); color: white; }
+
+/* --- STEP CONTAINERS --- */
+.step-container {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 60vh;
+    animation: fadeIn 0.4s ease-out;
+}
+.step-container.active { display: flex; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* --- MONITOR UI --- */
+.monitor-ui {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+/* CAMERA CIRCLE */
+#cam-container {
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    margin: 20px 0;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5); /* Deep shadow */
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+#video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    opacity: 0.6; 
+}
+
+/* Ring */
+.progress-ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 280px; height: 280px;
+    transform: translate(-50%, -50%) rotate(-90deg);
+    pointer-events: none;
+    z-index: 10;
+}
+
+.ring-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 6; }
+.ring-fill {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-dasharray: var(--ring-len);
+    stroke-dashoffset: var(--ring-len);
+    transition: stroke-dashoffset 0.1s linear;
+    filter: drop-shadow(0 0 6px var(--primary));
+}
+
+/* Overlay */
+.overlay-center {
+    position: absolute;
+    z-index: 20;
+    text-align: center;
+    display: none;
+}
+#countdown { font-size: 4rem; font-weight: 800; color: white; }
+#overlay-label { font-size: 1rem; font-weight: 700; color: rgba(255,255,255,0.8); letter-spacing: 1px; }
+
+/* --- GRAPH / CANVAS FIX --- */
+/* This makes the graph look like a dedicated medical display */
+.graph-container {
+    width: 100%;
+    height: 100px;
+    background: var(--card-bg); 
+    border-radius: 16px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255,255,255,0.05);
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5); /* Inset shadow for depth */
+}
+
+#graph {
+    width: 100%;
+    height: 100%;
+    display: block;
+    /* The JS should draw a bright line here, typically Green or Red */
+}
+
+/* BPM Status */
+.bpm-box { text-align: center; margin-bottom: 15px; width: 100%; }
+.status-bar { display: flex; justify-content: space-between; width: 100%; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px; font-weight: 500;}
+#live-badge { color: var(--accent); font-weight: 700; letter-spacing: 0.5px; opacity: 0; }
+
+.measure-percent {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 5px;
+}
+
+#grid-container { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 16px; 
+    margin-bottom: 16px; 
+}
+
+.stat-box { 
+    background: var(--card-bg); 
+    padding: 24px 20px; 
+    border-radius: var(--radius-card); 
+    text-align: center; 
+    border: 1px solid rgba(255,255,255,0.03);
+    background: linear-gradient(180deg, var(--card-bg) 0%, rgba(20, 25, 35, 1) 100%);
+}
+
+.stat-val { 
+    font-size: 2.2rem; 
+    font-weight: 800; 
+    color: white; 
+    line-height: 1.2;
+    margin-top: 5px;
+}
+
+.stat-label { 
+    font-size: 0.75rem; 
+    color: var(--primary); /* Blue label like "Prediction" */
+    font-weight: 700;
+    text-transform: uppercase; 
+    letter-spacing: 1px;
+}
+
+#impact-container {
+    align-items: center;
+    justify-content: center;
+}
+
+.impact-badge {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: white;
+    margin-top: 8px;
+}

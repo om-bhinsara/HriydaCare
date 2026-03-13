@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resting Heart Rate | HridyaCare</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+    :root { --bg:#0b1120; --text:#e2e8f0; --accent:#f43f5e; --glass:rgba(15,23,42,0.85); --card-bg: #1e293b; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:'Lato',sans-serif; line-height:1.6; }
+    
+    .nav { position:fixed; top:0; width:100%; padding:15px; background:var(--glass); backdrop-filter:blur(10px); z-index:10; border-bottom:1px solid rgba(255,255,255,0.1); box-sizing: border-box; }
+    .back { color:#fff; text-decoration:none; font-weight:700; text-transform:uppercase; font-size:14px; display: flex; align-items: center; gap: 5px;}
+    
+    .hero { height:350px; background: url('https://images.unsplash.com/photo-1559757175-0b299a3978b0?auto=format&fit=crop&w=1600&q=80') center/cover; position: relative;}
+    .hero::after { content:''; position:absolute; bottom:0; width:100%; height:100px; background: linear-gradient(to top, var(--bg), transparent); }
+
+    .content { max-width:700px; margin:-100px auto 0; padding:24px; position:relative; z-index: 2; }
+    
+    h1 { font-family:'Playfair Display',serif; font-size:36px; color:#fff; text-shadow:0 5px 20px #000; margin-bottom:10px; line-height: 1.1; }
+    h2 { font-family:'Playfair Display',serif; color: #fff; margin-top: 40px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+    
+    p { margin-bottom:20px; font-size:18px; color:#cbd5f5; }
+    
+    .highlight { border-left:4px solid var(--accent); padding-left:15px; font-style:italic; background:rgba(244,63,94,0.1); padding:15px; border-radius:0 10px 10px 0; margin: 30px 0; }
+
+    /* Table Styles */
+    .data-table { width: 100%; border-collapse: collapse; margin: 20px 0; background: var(--card-bg); border-radius: 10px; overflow: hidden; }
+    .data-table th, .data-table td { padding: 15px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .data-table th { background: rgba(244, 63, 94, 0.1); color: var(--accent); font-weight: 700; }
+    .data-table tr:last-child td { border-bottom: none; }
+
+    /* List Styles */
+    .custom-list { list-style: none; padding: 0; }
+    .custom-list li { margin-bottom: 12px; padding-left: 20px; position: relative; color: #cbd5f5; }
+    .custom-list li::before { content: '•'; color: var(--accent); font-weight: bold; position: absolute; left: 0; }
+
+    .warning-box { background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); padding: 20px; border-radius: 12px; margin-top: 30px; }
+    .warning-title { color: #facc15; font-weight: bold; margin-bottom: 10px; display: block; }
+
+</style>
+</head>
+<body>
+
+<div class="nav">
+    <a href="../heart.html" class="back">← Back to Hub</a>
+</div>
+
+<div class="hero"></div>
+
+<div class="content">
+    <div style="color:var(--accent); font-weight:700; text-transform:uppercase; font-size:12px; margin-bottom:10px;">Heart Health Dictionary</div>
+    <h1>Resting Heart Rate (RHR)</h1>
+    
+    <p>Your resting heart rate is the number of times your heart beats per minute while you are at complete rest. It is a critical indicator of your overall heart health and cardiovascular fitness.</p>
+    
+    <div class="highlight">
+        <strong>Key Takeaway:</strong> A lower resting heart rate generally implies better heart function and cardiovascular fitness.
+    </div>
+
+    <h2>What is "Normal"?</h2>
+    <p>While the standard "normal" range is widely cited as 60–100 BPM, optimal health is often found at the lower end of that spectrum.</p>
+    
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Beats Per Minute (BPM)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Athletes</strong></td>
+                <td>40 – 60 BPM</td>
+            </tr>
+            <tr>
+                <td><strong>Excellent</strong></td>
+                <td>60 – 69 BPM</td>
+            </tr>
+            <tr>
+                <td><strong>Average</strong></td>
+                <td>70 – 79 BPM</td>
+            </tr>
+            <tr>
+                <td><strong>Below Average</strong></td>
+                <td>80+ BPM</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Factors That Affect RHR</h2>
+    <p>Your heart rate fluctuates based on several internal and external factors:</p>
+    <ul class="custom-list">
+        <li><strong>Stress & Anxiety:</strong> Adrenaline releases can temporarily spike your rate.</li>
+        <li><strong>Medication:</strong> Beta-blockers may lower it, while thyroid meds may raise it.</li>
+        <li><strong>Hydration:</strong> Dehydration forces the heart to work harder to pump blood.</li>
+        <li><strong>Temperature:</strong> High humidity or heat can increase RHR by 5–10 BPM.</li>
+    </ul>
+
+    <h2>How to Measure Accurately</h2>
+    <p>To get your true resting heart rate, do not measure it after coffee or exercise. The best time is <strong>right after you wake up</strong>, before getting out of bed.</p>
+    
+    <div class="warning-box">
+        <span class="warning-title">⚠️ When to see a doctor</span>
+        <div style="font-size: 15px; opacity: 0.9;">
+            Consult a professional if your resting rate is consistently <strong>above 100 BPM</strong> (Tachycardia) or <strong>below 50 BPM</strong> (Bradycardia) if you are not a trained athlete, especially if accompanied by dizziness or fainting.
+        </div>
+    </div>
+    
+    <div style="margin-top: 40px; text-align: center;">
+        <a href="article_stress.html" style="color: var(--accent); text-decoration: none; font-weight: bold; border-bottom: 2px solid var(--accent);">Next: Read about Stress & Heart →</a>
+    </div>
+
+</div>
+
+</body>
+</html>

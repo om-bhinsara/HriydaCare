@@ -1,0 +1,613 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Privacy Policy | HridyaCare{% endblock %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    /* --- COMMON STYLES FOR BOTH PAGES --- */
+    :root {
+        --bg-dark: #0f172a;
+        --card-bg: rgba(30, 41, 59, 0.6);
+        --card-border: rgba(255, 255, 255, 0.08);
+        --primary: #f43f5e;
+        --primary-glow: rgba(244, 63, 94, 0.25);
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --radius-lg: 20px;
+        --radius-md: 12px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Override Body Background */
+    body {
+        background: var(--bg-dark);
+        color: var(--text-main);
+        font-family: 'Outfit', sans-serif;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-dark); }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+    /* --- FULL WIDTH LAYOUT --- */
+    .page-layout {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 30px 40px 60px;
+    }
+
+    /* --- HEADER SECTION (SAME FOR BOTH) --- */
+    .page-header {
+        text-align: center;
+        margin-bottom: 50px;
+        padding: 0;
+    }
+    
+    .header-badge {
+        display: inline-block;
+        padding: 8px 20px;
+        background: rgba(244, 63, 94, 0.1);
+        color: var(--primary);
+        border-radius: 100px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        border: 1px solid rgba(244, 63, 94, 0.2);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .page-header h1 {
+        font-size: 3rem;
+        font-weight: 800;
+        margin-bottom: 20px;
+        color: var(--text-main);
+        letter-spacing: -1px;
+        line-height: 1.1;
+    }
+
+    .page-header p {
+        color: var(--text-muted);
+        font-size: 1.2rem;
+        line-height: 1.6;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    /* --- CONTENT CONTAINER (SAME FOR BOTH) --- */
+    .content-container {
+        width: 100%;
+        max-width: 1400px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 40px;
+    }
+
+    /* --- SIDEBAR NAVIGATION (SAME FOR BOTH) --- */
+    .page-sidebar {
+        position: sticky;
+        top: 100px;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        padding: 25px;
+        border-radius: var(--radius-lg);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        height: fit-content;
+    }
+
+    .page-sidebar h4 {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        color: var(--primary);
+        margin-bottom: 25px;
+        letter-spacing: 1.2px;
+        font-weight: 800;
+        opacity: 0.9;
+    }
+
+    .page-sidebar ul { 
+        list-style: none; 
+        padding: 0; 
+        margin: 0; 
+    }
+    
+    .page-sidebar li { 
+        margin-bottom: 8px; 
+    }
+
+    .page-sidebar li a {
+        display: block;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.95rem;
+        padding: 12px 16px;
+        transition: var(--transition);
+        border-radius: 10px;
+        font-weight: 500;
+        border-left: 2px solid transparent;
+    }
+
+    .page-sidebar li a:hover,
+    .page-sidebar li a.active {
+        color: var(--text-main);
+        background: rgba(255, 255, 255, 0.04);
+        border-left-color: var(--primary);
+        padding-left: 20px;
+    }
+
+    /* --- CONTENT AREA (SAME FOR BOTH) --- */
+    .content-area {
+        width: 100%;
+    }
+
+    /* --- CONTENT SECTIONS (SAME FOR BOTH) --- */
+    .content-section {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-lg);
+        padding: 45px 50px;
+        margin-bottom: 25px;
+        transition: var(--transition);
+        backdrop-filter: blur(12px);
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    .content-section {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .content-section:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 20px 50px -15px rgba(0,0,0,0.5);
+        transform: translateY(-2px);
+    }
+
+    .content-section h3 {
+        color: var(--text-main);
+        font-size: 1.8rem;
+        margin-bottom: 25px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        position: relative;
+        padding-bottom: 15px;
+    }
+
+    .content-section h3::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 60px;
+        height: 3px;
+        background: var(--primary);
+        border-radius: 2px;
+    }
+
+    .content-section p, .content-section li {
+        color: #cbd5e1;
+        font-size: 1.1rem;
+        margin-bottom: 18px;
+        line-height: 1.7;
+    }
+
+    .content-section p {
+        max-width: 100%;
+        padding-right: 0;
+    }
+
+    .content-section ul { 
+        padding-left: 20px; 
+        margin: 25px 0; 
+    }
+    
+    .content-section li { 
+        list-style-type: none; 
+        position: relative; 
+        padding-left: 30px;
+        margin-bottom: 12px;
+    }
+    
+    .content-section li::before {
+        content: "•";
+        position: absolute;
+        left: 0;
+        color: var(--primary);
+        font-size: 1.5rem;
+        line-height: 1;
+    }
+
+    /* --- COMMON COMPONENTS (SAME FOR BOTH) --- */
+    
+    /* Two-column layout */
+    .two-column-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        margin: 30px 0;
+    }
+
+    .two-column-list ul {
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Highlight Box */
+    .highlight-box {
+        background: linear-gradient(90deg, rgba(244, 63, 94, 0.06) 0%, transparent 100%);
+        border-left: 4px solid var(--primary);
+        padding: 25px 35px;
+        border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        margin: 30px 0;
+        width: 100%;
+    }
+    
+    .highlight-box p { 
+        color: var(--text-main); 
+        margin-bottom: 0; 
+        font-weight: 500;
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+
+    /* Disclaimer Box */
+    .disclaimer-box { 
+        background: rgba(234, 179, 8, 0.05); 
+        border-left-color: #eab308; 
+    }
+    
+    .disclaimer-box p { 
+        color: #fef08a; 
+    }
+
+    /* Contact Section */
+    .contact-section {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 60px 50px;
+        text-align: center;
+        margin-top: 40px;
+        border-radius: var(--radius-lg);
+        width: 100%;
+    }
+    
+    .contact-section h3 {
+        font-size: 2rem;
+        margin-bottom: 20px;
+        color: var(--text-main);
+    }
+    
+    .contact-section h3::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    .contact-section p {
+        font-size: 1.2rem;
+        max-width: 800px;
+        margin: 0 auto 30px;
+        color: var(--text-muted);
+    }
+
+    /* Button Style */
+    .primary-button {
+        display: inline-block;
+        margin-top: 15px;
+        color: #fff;
+        background: linear-gradient(135deg, #f43f5e, #e11d48);
+        padding: 18px 45px;
+        border-radius: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        font-size: 1.1rem;
+        box-shadow: 0 10px 30px -5px rgba(244, 63, 94, 0.4);
+        transition: var(--transition);
+        border: none;
+        cursor: pointer;
+    }
+    
+    .primary-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 40px -5px rgba(244, 63, 94, 0.6);
+    }
+
+    /* Footer */
+    .page-footer {
+        text-align: center; 
+        color: var(--text-muted); 
+        font-size: 0.9rem; 
+        margin-top: 60px; 
+        padding-top: 30px; 
+        border-top: 1px solid var(--card-border);
+        width: 100%;
+    }
+
+    /* --- MOBILE RESPONSIVENESS (SAME FOR BOTH) --- */
+    @media (max-width: 1200px) {
+        .page-layout {
+            padding: 30px 30px 50px;
+        }
+        
+        .content-container {
+            grid-template-columns: 200px 1fr;
+            gap: 30px;
+        }
+        
+        .content-section {
+            padding: 40px 35px;
+        }
+    }
+
+    @media (max-width: 900px) {
+        .content-container {
+            grid-template-columns: 1fr;
+            gap: 40px;
+        }
+        
+        .page-sidebar {
+            position: relative;
+            top: 0;
+            margin-bottom: 20px;
+        }
+        
+        .page-header h1 {
+            font-size: 2.5rem;
+        }
+        
+        .page-header p {
+            font-size: 1.1rem;
+            padding: 0 20px;
+        }
+        
+        .content-section { 
+            padding: 35px 30px; 
+        }
+        
+        .contact-section { 
+            padding: 50px 30px; 
+        }
+        
+        .two-column-list {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-layout {
+            padding: 25px 20px 40px;
+        }
+        
+        .content-section { 
+            padding: 30px 25px; 
+        }
+        
+        .content-section h3 {
+            font-size: 1.6rem;
+        }
+        
+        .contact-section {
+            padding: 40px 25px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .page-layout {
+            padding: 20px 15px 30px;
+        }
+        
+        .page-header h1 {
+            font-size: 2rem;
+        }
+        
+        .content-section { 
+            padding: 25px 20px; 
+        }
+        
+        .primary-button {
+            padding: 16px 35px;
+            font-size: 1rem;
+        }
+        
+        .page-sidebar {
+            padding: 20px;
+        }
+    }
+</style>
+
+<script>
+    // Common JavaScript for both pages
+    document.addEventListener('DOMContentLoaded', function() {
+        // Smooth scroll for sidebar links
+        const sidebarLinks = document.querySelectorAll('.page-sidebar a');
+        const sections = document.querySelectorAll('.content-section');
+        
+        // Set active link on scroll
+        function setActiveLink() {
+            let current = '';
+            const scrollPos = window.scrollY + 150;
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                
+                if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            sidebarLinks.forEach(link => {
+                link.classList.remove('active');
+                const href = link.getAttribute('href').substring(1);
+                if (href === current) {
+                    link.classList.add('active');
+                }
+            });
+        }
+        
+        // Set active link on page load
+        setActiveLink();
+        
+        // Update active link on scroll
+        window.addEventListener('scroll', setActiveLink);
+        
+        // Smooth scroll to sections when clicking sidebar links
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                if (targetElement) {
+                    // Remove active class from all links
+                    sidebarLinks.forEach(l => l.classList.remove('active'));
+                    
+                    // Add active class to clicked link
+                    this.classList.add('active');
+                    
+                    // Scroll to target
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // Add hover effect to sections
+        const allSections = document.querySelectorAll('.content-section');
+        allSections.forEach(section => {
+            section.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+            });
+            
+            section.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="page-layout">
+  
+  <div class="page-header">
+    <span class="header-badge">Last Updated: January 2026</span>
+    <h1>Privacy Policy</h1>
+    <p>
+      Your health data is sensitive. We've designed HridyaCare to prioritize 
+      your privacy through immediate data disposal and transparent processing.
+    </p>
+  </div>
+
+  <div class="content-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="page-sidebar">
+      <h4>Contents</h4>
+      <ul>
+        <li><a href="#info" class="active">1. Information Collection</a></li>
+        <li><a href="#camera">2. Camera Usage</a></li>
+        <li><a href="#purpose">3. Data Purpose</a></li>
+        <li><a href="#disclaimer">4. Medical Disclaimer</a></li>
+        <li><a href="#storage">5. Retention</a></li>
+        <li><a href="#contact">6. Get in Touch</a></li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="content-area">
+      
+      <div class="content-section" id="info">
+        <h3>1. Information We Collect</h3>
+        <p>To provide a personalized wellness experience, we collect specific data points:</p>
+        <div class="two-column-list">
+          <ul>
+            <li>Basic account details (Name, email, age, and city)</li>
+            <li>Heart-rate readings (Numerical BPM values only)</li>
+          </ul>
+          <ul>
+            <li>Environmental context (Local Air Quality Index)</li>
+            <li>Anonymous performance telemetry</li>
+          </ul>
+        </div>
+
+        <div class="highlight-box">
+          <strong>Privacy Shield:</strong> 
+          HridyaCare never stores camera images, video frames, facial data, or raw biometric signals. All processing happens locally or in volatile memory.
+        </div>
+      </div>
+
+      <div class="content-section" id="camera">
+        <h3>2. How Camera Data Is Handled</h3>
+        <p>
+          Camera input is processed <strong>temporarily and in real time</strong> to estimate
+          physiological signals. Once heart-rate values are calculated,
+          all visual data is immediately purged from the system memory.
+        </p>
+        <p>
+          The camera is only used during active measurement sessions and is never 
+          accessed in the background or without your explicit permission.
+        </p>
+      </div>
+
+      <div class="content-section" id="purpose">
+        <h3>3. Purpose of Data Usage</h3>
+        <div class="two-column-list">
+          <ul>
+            <li>Generating wellness insights and trend summaries</li>
+            <li>Personalizing health reports and recommendations</li>
+          </ul>
+          <ul>
+            <li>Improving algorithm accuracy and reliability</li>
+            <li>Maintaining secure platform infrastructure</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="content-section" id="disclaimer">
+        <h3>4. Medical & Wellness Disclaimer</h3>
+        <div class="highlight-box disclaimer-box">
+          HridyaCare is a wellness-awareness platform and is <strong>not a medical device</strong>.
+          Insights provided are not intended for clinical diagnosis or treatment.
+        </div>
+      </div>
+
+      <div class="content-section" id="storage">
+        <h3>5. Storage & Retention</h3>
+        <p>
+          Data is encrypted using industry-standard AES-256 protocols and retained
+          only as long as your account remains active. You maintain full ownership 
+          of your data and may request total deletion at any time.
+        </p>
+        <div class="highlight-box">
+          <strong>Right to Delete:</strong> 
+          You can request complete deletion of your account and all associated data by contacting us at the email below.
+        </div>
+      </div>
+
+      <div class="content-section contact-section" id="contact">
+        <h3>Contact Our Privacy Team</h3>
+        <p>Have questions about how we handle your data? Reach out directly:</p>
+        <a href="mailto:hridyacare.webapp@gmail.com" class="primary-button">Email Privacy Team</a>
+      </div>
+
+      <div class="page-footer">
+        © 2026 HridyaCare • Your Privacy is Our Priority
+      </div>
+
+    </main>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,520 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Tele-Health | HridyaCare{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    /* --- PAGE STYLES --- */
+    :root {
+        --primary: #f43f5e;
+        --bg-card: #1e293b;
+        --border-color: rgba(255, 255, 255, 0.08);
+        --text-muted: #94a3b8;
+    }
+
+    .page-header { 
+        display: flex; justify-content: space-between; align-items: center; 
+        margin-bottom: 20px; padding: 0 4px;
+    }
+    .page-title { 
+        font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; color: #fff; 
+    }
+
+    /* HEADER CARD */
+    .header-card {
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        border-radius: 24px;
+        padding: 24px;
+        margin-bottom: 24px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .header-card::before {
+        content: ''; position: absolute; top: -60px; right: -60px; width: 180px; height: 180px;
+        background: radial-gradient(circle, rgba(244, 63, 94, 0.1), transparent 70%);
+        pointer-events: none;
+    }
+
+    .header-icon { font-size: 40px; margin-bottom: 10px; display: inline-block; animation: float 3s ease-in-out infinite; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+    h2 { margin: 0 0 8px 0; font-size: 20px; font-weight: 700; color: #fff; position: relative; z-index: 1; }
+    p { margin: 0; font-size: 14px; color: var(--text-muted); line-height: 1.5; position: relative; z-index: 1; }
+
+    /* BADGES */
+    .risk-badge {
+        display: inline-block; padding: 6px 16px; border-radius: 20px;
+        background: rgba(245, 158, 11, 0.1); color: #f59e0b;
+        font-size: 12px; font-weight: 700; margin-top: 14px;
+        border: 1px solid rgba(245, 158, 11, 0.3); letter-spacing: 0.5px;
+    }
+
+    /* CARDS */
+    .card {
+        background: var(--bg-card);
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    /* Card Headers with Icons */
+    .card-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    h3 { margin: 0; font-size: 16px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px; }
+
+    /* Info Trigger Button (Small 'i') */
+    .info-trigger {
+        width: 24px; height: 24px; border-radius: 50%;
+        background: rgba(59, 130, 246, 0.15); color: #3b82f6;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px; font-weight: bold; font-family: serif;
+        cursor: pointer; border: 1px solid rgba(59, 130, 246, 0.3);
+        transition: 0.2s;
+    }
+    .info-trigger:hover { background: #3b82f6; color: white; }
+
+    /* INPUTS */
+    label { display: block; margin-top: 16px; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; }
+    
+    select, textarea, input[type="text"] {
+        width: 100%; padding: 16px; border-radius: 14px;
+        background: #0f172a; border: 1px solid var(--border-color);
+        color: white; font-family: inherit; font-size: 14px;
+        transition: 0.2s; outline: none;
+    }
+    select:focus, textarea:focus, input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.2); }
+
+    /* BUTTONS */
+    .btn-primary {
+        width: 100%; padding: 16px; margin-top: 24px;
+        background: var(--primary); color: white; border: none;
+        border-radius: 16px; font-weight: 700; font-size: 15px;
+        cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);
+    }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { background: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; }
+
+    /* --- NEW CHAT STYLES (MATCHING DASHBOARD) --- */
+    .chat-container {
+        display: flex; flex-direction: column; height: 400px;
+    }
+    
+    .chat-scroll {
+        flex: 1; overflow-y: auto; padding: 15px;
+        background: rgba(0,0,0,0.2); border-radius: 16px;
+        border: 1px solid var(--border-color);
+        display: flex; flex-direction: column; gap: 12px;
+        margin-bottom: 15px;
+    }
+
+    .chat-bubble {
+        max-width: 80%; padding: 12px 16px; border-radius: 12px;
+        font-size: 14px; line-height: 1.5; position: relative;
+        word-wrap: break-word;
+    }
+
+    /* Message from Coach (Left) */
+    .msg-coach {
+        align-self: flex-start; 
+        background: #334155; color: #e2e8f0;
+        border-bottom-left-radius: 2px;
+    }
+
+    /* Message from User (Right) */
+    .msg-user {
+        align-self: flex-end; 
+        background: var(--primary); color: white;
+        border-bottom-right-radius: 2px;
+    }
+
+    .msg-meta {
+        font-size: 10px; opacity: 0.7; margin-bottom: 4px; display: block; 
+        font-weight: 700; text-transform: uppercase;
+    }
+
+    .chat-input-area {
+        display: flex; gap: 10px; position: relative;
+    }
+    
+    .chat-btn {
+        background: var(--primary); color: white; border: none;
+        padding: 0 20px; border-radius: 12px; font-weight: 600;
+        cursor: pointer; width: auto; /* Override full width */
+    }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 2000; display: none; justify-content: center; align-items: center; padding: 20px; }
+    .modal-content { background: #1e293b; padding: 24px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); max-width: 350px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); animation: popIn 0.3s ease; }
+    @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .modal-close { background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; }
+
+    .disclaimer { font-size: 11px; color: #64748b; text-align: center; margin-top: 20px; line-height: 1.4; padding: 0 10px; }
+    
+    /* SUCCESS BOX */
+    .success-box { text-align: center; padding: 30px; background: rgba(16, 185, 129, 0.1); border: 1px dashed #10b981; animation: fadeIn 0.5s ease-out; }
+    
+    .profile-card { background: linear-gradient(90deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.1); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    <div class="page-header">
+        <div class="page-title">Tele-Health</div>
+    </div>
+
+    <div class="header-card">
+        <span class="header-icon">🩺</span>
+        <h2>Wellness Consultation</h2>
+        <p>Connect with a certified health coach to review your heart data and receive personalized guidance.</p>
+        <span class="risk-badge" id="riskBadge">Loading Risk Status...</span>
+    </div>
+
+    <div class="card profile-card">
+        <h3>👤 Select Profile</h3>
+        <p style="font-size:13px; color:#94a3b8; margin-bottom:10px;">Who is this consultation for?</p>
+        <select id="memberSelect" onchange="changeMember()">
+            <option value="" disabled selected>Loading profiles...</option>
+        </select>
+    </div>
+
+    <div class="card">
+        <div class="card-header-row">
+            <h3>📊 Data Summary</h3>
+            <span id="dataForBadge" style="font-size:11px; background:#334155; padding:4px 8px; border-radius:6px; color:#cbd5e1;">For: You</span>
+        </div>
+        
+        <ul id="healthSummary" style="list-style: none; padding: 0;">
+            <li style="text-align:center; padding:30px; color:#64748b; font-style: italic;">Loading health data...</li>
+        </ul>
+    </div>
+
+    <div class="card" id="consultFormCard">
+        <div class="card-header-row">
+            <h3>📝 Request Consultation</h3>
+            <div class="info-trigger" onclick="openPrivacyModal()">i</div>
+        </div>
+
+        <label for="coachSelect">Select Health Coach</label>
+        <select id="coachSelect">
+            <option value="" disabled selected>Loading available coaches...</option>
+        </select>
+        
+        <label for="reason">Primary Concern</label>
+        <select id="reason">
+            <option>High Heart Rate Trends</option>
+            <option>Stress & Anxiety Management</option>
+            <option>Recovery & Fatigue</option>
+            <option>General Wellness Check</option>
+            <option>Other</option>
+        </select>
+
+        <label for="notes">Additional Details (Optional)</label>
+        <textarea id="notes" rows="3" placeholder="Briefly describe symptoms or questions..."></textarea>
+
+        <button id="requestConsultationBtn" class="btn-primary">
+            Submit Request
+        </button>
+    </div>
+
+    <div class="card success-box" id="successScreen" style="display:none;">
+        <div style="font-size:40px; margin-bottom:10px;">✅</div>
+        <h3 style="justify-content:center; color:#10b981; margin:0;">Request Sent!</h3>
+        <p style="margin-top:10px; color:#cbd5e1;">Your consultation request has been submitted. A health coach will review your data and respond shortly.</p>
+    </div>
+
+    <div class="card">
+        <h3>💬 Consultation Chat</h3>
+        <div class="chat-container">
+            <div id="coachTimeline" class="chat-scroll">
+                <div style="text-align:center; padding:40px 20px; color:#64748b;">
+                    <div style="font-size:30px; margin-bottom:10px; opacity:0.5;">📭</div>
+                    <p>No messages yet.<br>Chat history will appear here.</p>
+                </div>
+            </div>
+            
+            <div class="chat-input-area">
+                <input type="text" id="userChatInput" placeholder="Type a message to your coach...">
+                <button class="chat-btn" onclick="sendUserMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="disclaimer">
+        HridyaCare consultations provide general wellness guidance only and do not replace professional medical diagnosis or treatment.
+    </div>
+
+    <div class="modal-overlay" id="privacyModal" onclick="closePrivacyModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span style="color:white; font-weight:700; font-size:1.1rem;">Data Privacy</span>
+                <button class="modal-close" onclick="closePrivacyModalDirect()">×</button>
+            </div>
+            <div style="color:#cbd5e1; font-size:0.9rem; line-height:1.6;">
+                <p style="margin-top:0;">To assist you, the following data will be securely shared with the selected coach:</p>
+                <ul style="padding-left:20px; margin-bottom:15px; color:#94a3b8;">
+                    <li><strong>Anonymized ID:</strong> Your name is protected.</li>
+                    <li><strong>Heart Trends:</strong> Average & Max BPM.</li>
+                    <li><strong>Demographics:</strong> Age & Gender (for context).</li>
+                    <li><strong>Stress Score:</strong> Calculated stress levels.</li>
+                </ul>
+                <p style="margin-bottom:0; font-size:0.85rem; color:#64748b;">
+                    Coaches cannot see your raw camera feed or exact location.
+                </p>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentMemberId = null;
+
+window.addEventListener("pageshow", (e) => {
+    if (e.persisted) window.location.reload();
+});
+
+document.addEventListener("DOMContentLoaded", async () => {
+    await loadFamilyMembers();
+    loadCoaches();
+    // Poll for chat updates every 3 seconds
+    setInterval(() => loadChatHistory(false), 3000);
+});
+
+// --- PRIVACY MODAL LOGIC ---
+function openPrivacyModal() { document.getElementById('privacyModal').style.display = 'flex'; }
+function closePrivacyModal(e) { if (e.target.id === 'privacyModal') document.getElementById('privacyModal').style.display = 'none'; }
+function closePrivacyModalDirect() { document.getElementById('privacyModal').style.display = 'none'; }
+
+// --- PROFILE LOGIC ---
+async function loadFamilyMembers() {
+    try {
+        const res = await fetch('/api/family-members');
+        const members = await res.json();
+        const select = document.getElementById("memberSelect");
+        select.innerHTML = '';
+
+        members.sort((a, b) => {
+            if (a.relationship.toLowerCase() === 'self') return -1;
+            if (b.relationship.toLowerCase() === 'self') return 1;
+            return 0;
+        });
+
+        members.forEach(m => {
+            const isSelf = m.relationship.toLowerCase() === 'self';
+            const label = isSelf ? "You (Self)" : `${m.name} (${m.relationship})`;
+            const opt = document.createElement("option");
+            opt.value = m.id;
+            opt.text = label;
+            select.appendChild(opt);
+        });
+
+        if (members.length > 0) {
+            select.value = members[0].id;
+            currentMemberId = members[0].id;
+            loadHealthSummary(currentMemberId);
+            loadChatHistory(true); // Load chat for initial member
+        }
+    } catch (e) { console.error("Error loading members", e); }
+}
+
+function changeMember() {
+    const select = document.getElementById("memberSelect");
+    currentMemberId = select.value;
+    const text = select.options[select.selectedIndex].text;
+    document.getElementById("dataForBadge").innerText = "For: " + text;
+    loadHealthSummary(currentMemberId);
+    loadChatHistory(true); // Reload chat when member changes
+}
+
+// --- UPDATED SUMMARY LOGIC (With Average Calc) ---
+async function loadHealthSummary(memberId) {
+    const healthSummaryEl = document.getElementById("healthSummary");
+    const requestBtn = document.getElementById("requestConsultationBtn");
+    const riskBadge = document.getElementById("riskBadge");
+
+    healthSummaryEl.innerHTML = `<li style="text-align:center; padding:30px; color:#64748b;">Loading data...</li>`;
+
+    try {
+        // 1. Fetch Summary (Last Scan)
+        const summaryRes = await fetch(`/api/last-health-summary-member?member_id=${memberId}`);
+        const report = await summaryRes.json();
+
+        if (!report.exists) {
+            healthSummaryEl.innerHTML = `
+                <li style="text-align:center; padding:20px; color:#f43f5e; background:rgba(244,63,94,0.1); border-radius:12px;">
+                    ⚠️ No recent scan found for this profile.<br>
+                    <a href="/heart-rate" style="color:#fff; text-decoration:underline; font-weight:700; margin-top:8px; display:inline-block;">Take a measurement first</a>
+                </li>`;
+            requestBtn.disabled = true;
+            requestBtn.innerText = "Measurement Required";
+            riskBadge.innerText = "Scan Required";
+            riskBadge.style.color = "#ef4444";
+            riskBadge.style.borderColor = "#ef4444";
+            riskBadge.style.background = "rgba(239, 68, 68, 0.1)";
+            return;
+        }
+
+        // 2. Fetch History (For True Average)
+        const historyRes = await fetch(`/api/heart-rate/last-7?member_id=${memberId}`);
+        const history = await historyRes.json();
+        
+        // Calculate Average
+        let avgBpm = report.bpm; // Default to last if history fails
+        if (history && history.length > 0) {
+            const sum = history.reduce((acc, curr) => acc + curr.bpm, 0);
+            avgBpm = Math.round(sum / history.length);
+        }
+
+        // Update UI
+        riskBadge.innerText = `${report.impactCategory} Risk Level`;
+        if(report.impactCategory === 'High') {
+            riskBadge.style.color = "#f43f5e";
+            riskBadge.style.borderColor = "#f43f5e";
+        } else {
+            riskBadge.style.color = "#10b981";
+            riskBadge.style.borderColor = "#10b981";
+        }
+
+        healthSummaryEl.innerHTML = `
+            <li style="padding: 16px; background:rgba(255,255,255,0.03); border-radius:16px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:13px; color:#94a3b8;">Average Heart Rate</div>
+                <div style="font-size:28px; font-weight:700; color:white;">
+                    ${avgBpm} <span style="font-size:14px; font-weight:500; color:#64748b;">BPM</span>
+                </div>
+            </li>
+            <li style="font-size:14px; line-height:1.5; color:#e2e8f0; margin-bottom:8px;"><strong>Latest Insight:</strong> ${report.message}</li>
+            <li style="font-size:12px; margin-top:10px; color:#64748b; text-align:right;">📅 Last Scan: ${new Date(report.timestamp).toLocaleDateString()}</li>
+        `;
+
+        requestBtn.disabled = false;
+        requestBtn.innerText = "Submit Request";
+
+    } catch (e) {
+        console.error(e);
+        healthSummaryEl.innerHTML = `<li>Error loading health data.</li>`;
+    }
+}
+
+async function loadCoaches() {
+    const select = document.getElementById("coachSelect");
+    try {
+        const res = await fetch("/api/coaches");
+        const coaches = await res.json();
+        select.innerHTML = `<option value="" disabled selected>Select a Health Coach</option>`;
+        coaches.forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = c.id;
+            opt.innerText = c.username;
+            select.appendChild(opt);
+        });
+    } catch (e) { select.innerHTML = `<option disabled>Error loading coaches</option>`; }
+}
+
+// --- UPDATED CHAT FUNCTIONALITY ---
+async function loadChatHistory(scrollToBottom = true) {
+    if (!currentMemberId) return;
+
+    try {
+        const res = await fetch(`/api/telehealth/coach-timeline?member_id=${currentMemberId}`);
+        const messages = await res.json();
+        const container = document.getElementById("coachTimeline");
+        
+        if (!messages.length) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:40px 20px; color:#64748b;">
+                    <div style="font-size:30px; margin-bottom:10px; opacity:0.5;">📭</div>
+                    <p>No messages yet.<br>Chat history will appear here.</p>
+                </div>`;
+            return;
+        }
+
+        // Only redraw if content differs (simple check) to prevent flickering inputs
+        // For strict correctness in this snippet, we rebuild html
+        let html = "";
+        
+        // Timeline API usually returns latest first, flip for chat
+        const sortedMsgs = [...messages].reverse(); 
+
+        sortedMsgs.forEach(item => {
+            const date = new Date(item.timestamp);
+            // Check if message is from User or Coach based on content convention or metadata
+            // Assuming "User:" prefix from the Coach Dashboard logic
+            const isUser = item.note.startsWith("User:");
+            const text = item.note.replace("User:", "").trim();
+            const senderName = isUser ? "You" : item.coach_name;
+            const bubbleClass = isUser ? "msg-user" : "msg-coach";
+
+            html += `
+                <div class="chat-bubble ${bubbleClass}">
+                    <span class="msg-meta">${senderName} • ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    ${text}
+                </div>
+            `;
+        });
+
+        // Simple DOM diff to allow scrolling
+        if (container.innerHTML !== html) {
+            container.innerHTML = html;
+            if (scrollToBottom) container.scrollTop = container.scrollHeight;
+        }
+
+    } catch(e) { console.log("Chat error", e); }
+}
+
+async function sendUserMessage() {
+    const input = document.getElementById("userChatInput");
+    const txt = input.value.trim();
+    if (!txt) return;
+    if (!currentMemberId) return alert("Select a profile first");
+
+    // Clear input immediately for better UX
+    input.value = "";
+
+    try {
+        // We reuse the existing mechanism. 
+        // We prepend "User:" so the coach dashboard knows who sent it.
+        await fetch("/api/telehealth/send-message", { 
+            method: "POST", 
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                message: "User: " + txt, 
+                member_id: currentMemberId 
+            }) 
+        });
+        
+        loadChatHistory(true);
+    } catch(e) {
+        alert("Failed to send message");
+    }
+}
+
+document.getElementById("requestConsultationBtn").addEventListener("click", async () => {
+    const coachId = document.getElementById("coachSelect").value;
+    const reason = document.getElementById("reason").value;
+    const notes = document.getElementById("notes").value;
+
+    if (!coachId) { alert("Please select a health coach."); return; }
+    if (!currentMemberId) { alert("Please select a family member profile."); return; }
+
+    const res = await fetch("/api/telehealth/request", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coach_id: coachId, member_id: currentMemberId, reason, details: notes })
+    });
+
+    if (res.ok) {
+        document.getElementById("consultFormCard").style.display = "none";
+        document.getElementById("successScreen").style.display = "block";
+        loadChatHistory(true); // Refresh chat to show the request potentially
+    } else { alert("Failed to submit request."); }
+});
+</script>
+{% endblock %}

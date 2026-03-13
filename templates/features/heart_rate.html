@@ -1,0 +1,828 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Heart Rate Monitor | HridyaCare{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/member-cards.css') }}">
+
+<style>
+:root {
+        /* 1. Update Circumference (2 * pi * 90 ≈ 565) */
+        --ring-len: 565; 
+        --ring-color: #06b6d4; 
+        --primary-glow: rgba(244, 63, 94, 0.4);
+        --bg-panel: rgba(30, 41, 59, 0.7);
+    }
+
+    /* ANIMATIONS */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); } }
+
+    /* MAIN CONTAINER CENTERING */
+    .step-container {
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 75vh;
+        width: 100%;
+        animation: fadeIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        padding-bottom: 40px;
+    }
+    .step-container.active { display: flex; }
+
+    /* INNER CONTENT WRAPPER */
+    .step-content { width: 100%; max-width: 420px; text-align: left; }
+
+    /* Headings & Text */
+    h2 { 
+        font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 0.5rem; text-align: center; letter-spacing: -0.02em;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    p { 
+        color: #94a3b8; line-height: 1.6; font-size: 1.05rem; margin-top: 0; text-align: center; margin-bottom: 35px;
+    }
+
+
+
+
+
+    .ring-bg {
+  fill: none;
+  stroke: rgba(255,255,255,0.08);
+  stroke-width: 6;
+}
+.ring-fill {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 565;
+  stroke-dashoffset: 565;
+  transition: stroke-dashoffset 0.12s linear;
+}
+
+
+#cam-container.pulse {
+  box-shadow: 0 0 25px rgba(244,63,94,0.9),
+              0 0 50px rgba(244,63,94,0.4);
+}
+
+    .member-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .member-name { font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 2px; }
+    .member-relation { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+
+    /* "Add New" Button */
+    .btn-add-new {
+        width: 100%; padding: 16px; margin-top: 20px;
+        border: 2px dashed rgba(255, 255, 255, 0.12); border-radius: 18px;
+        background: transparent; color: #94a3b8; font-weight: 600; cursor: pointer;
+        transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 0.95rem;
+    }
+    .btn-add-new:hover { background: rgba(255, 255, 255, 0.03); border-color: #cbd5e1; color: #f1f5f9; }
+
+    /* --- FORM INPUTS --- */
+    input, select {
+        width: 100%; padding: 16px; background: rgba(15, 23, 42, 0.6); 
+        border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; color: white; font-size: 1.1rem; 
+        outline: none; margin-top: 15px; text-align: center; transition: all 0.2s;
+    }
+    input:focus, select:focus {
+        border-color: var(--ring-color); background: rgba(15, 23, 42, 0.9);
+        box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.1);
+    }
+    #add-member-form input, #add-member-form select { text-align: left; padding-left: 20px; }
+
+    /* Suggestions Box */
+    .suggestions-list {
+        list-style: none; margin: 4px auto 0; padding: 0;
+        border-radius: 14px; max-height: 180px; overflow-y: auto;
+        background: #1e293b; border: 1px solid rgba(255,255,255,0.1);
+        z-index: 100; width: 100%; text-align: left;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .suggestions-list li { padding: 12px 18px; cursor: pointer; color: #cbd5e1; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem; }
+    .suggestions-list li:hover { background: var(--ring-color); color: white; }
+
+    /* Buttons */
+    .btn {
+        background: linear-gradient(135deg, #f43f5e, #e11d48); color: white; border: none; padding: 18px;
+        border-radius: 16px; font-size: 1rem; font-weight: 700; cursor: pointer;
+        width: 100%; box-shadow: 0 8px 20px -5px rgba(244, 63, 94, 0.4);
+        transition: transform 0.2s, box-shadow 0.2s; margin-top: 25px;
+        display: flex; align-items: center; justify-content: center; gap: 8px; letter-spacing: 0.5px;
+    }
+    .btn:hover { box-shadow: 0 12px 30px -5px rgba(244, 63, 94, 0.6); transform: translateY(-2px); }
+    .btn:active { transform: scale(0.98); }
+    
+    .btn-outline {
+        background: transparent !important; border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow: none !important; color: #cbd5e1 !important; font-weight: 600;
+    }
+    .btn-outline:hover { border-color: white !important; color: white !important; background: rgba(255,255,255,0.05) !important; }
+
+    /* Back Button */
+    .back-btn {
+        background: none; border: none; color: #64748b; font-size: 0.9rem;
+        cursor: pointer; margin: 25px auto 0 auto; padding: 10px; 
+        display: block; font-weight: 600; text-align: center; transition: color 0.2s;
+    }
+    .back-btn:hover { color: #f8fafc; }
+
+    /* --- SENSOR & RESULTS STYLES --- */
+    .monitor-ui { display: flex; flex-direction: column; align-items: center; width: 100%; }
+    
+.status-bar { 
+    display: flex; 
+    justify-content: center; /* Default: Centers "Ready", "Hold Still" */
+    align-items: center;     
+    position: relative;
+    width: 100%; 
+    max-width: 340px;
+    min-height: 70px;
+    
+    /* Visuals */
+    color: #94a3b8; 
+    font-size: 0.9rem;
+    margin-bottom: 15px; 
+    font-weight: 600;
+    background: rgba(255,255,255,0.05); 
+    padding: 0; 
+    border-radius: 20px;
+    line-height: 1.4;
+}
+
+    /* Move Badge to Absolute Position so it doesn't push the text */
+    #live-badge { 
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        
+        color: var(--ring-color); 
+        font-weight: 700; 
+        opacity: 0; 
+        display: flex; 
+        align-items: center; 
+        gap: 6px; 
+        font-size: 0.75rem; /* Slightly smaller to not crowd */
+    }
+
+    #live-badge::before { 
+        content:''; 
+        display:block; 
+        width:8px; 
+        height:8px; 
+        border-radius:50%; 
+        background:var(--ring-color); 
+        box-shadow: 0 0 10px var(--ring-color); 
+    }
+
+/* --- MESSAGE BOX (Default: Centered) --- */
+#message-box {
+    z-index: 1;
+    width: 100%;
+    text-align: center; /* Default: Center alignment */
+    padding: 0 60px;    /* Padding keeps text away from where badge WOULD be */
+}
+.status-bar.mode-measuring {
+    justify-content: flex-end; /* Push content to the Right */
+    padding-right: 20px;       /* Add spacing from right edge */
+}
+
+.status-bar.mode-measuring #message-box {
+    text-align: right;   /* Align text to the Right */
+    max-width: 65%;      /* Limit width so it doesn't overlap the Badge */
+    padding: 0;          /* Remove the centering padding */
+}
+
+    /* Camera Aesthetics */
+ #cam-container { 
+        width: 200px;  /* Changed from 280px */
+        height: 200px; /* Changed from 280px */
+        border-radius: 50%; position: relative; 
+        display: flex; align-items: center; justify-content: center; 
+        background: #000; margin: 15px 0; box-shadow: 0 0 50px rgba(0,0,0,0.6); border: 4px solid #1e293b; 
+    }
+
+    #video { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; opacity: 0.6; }
+    
+.progress-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200px;
+    height: 200px;
+    transform: translate(-50%, -50%) rotate(-90deg);
+    pointer-events: none;
+    z-index: 10;
+}
+
+
+#ring-fill {
+    transform-origin: 50% 50%;
+}
+    .ring-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 5; }
+    
+    .overlay-center { position: absolute; z-index: 20; text-align: center; display: none; }
+   
+#countdown { 
+        font-size: 3rem; /* Changed from 4.5rem */
+        font-weight: 800; color: white; text-shadow: 0 4px 20px rgba(0,0,0,0.5); 
+    }
+
+    #overlay-label { font-size: 0.9rem; font-weight: 700; color: var(--ring-color); letter-spacing: 2px; text-transform: uppercase; }
+    
+    /* Graph with Grid */
+    .graph-container { 
+        width: 100%; height: 120px; background: #0f172a; 
+        border-radius: 16px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; 
+        background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 20px 20px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+    }
+    #graph { width: 100%; height: 100%; display: block; mix-blend-mode: screen; }
+    
+    .bpm-box { text-align: center; margin-bottom: 15px; width: 100%; }
+
+    
+    .measure-percent { font-size: 3rem; font-weight: 800; color: white; margin-bottom: 5px; letter-spacing: -1px; }
+
+    /* Results */
+    #step-5 .step-content { max-width: 100%; text-align: left; }
+    #grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .stat-box { 
+        background: var(--bg-panel); backdrop-filter: blur(10px);
+        padding: 24px 16px; border-radius: 20px; text-align: center; 
+        border: 1px solid rgba(255,255,255,0.05); 
+        display: flex; flex-direction: column; justify-content: center; align-items: center; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .stat-label { font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .stat-val { font-size: 2.5rem; font-weight: 800; color: white; line-height: 1; display: flex; align-items: baseline; gap: 6px; justify-content: center; }
+    .aqi-unit { font-size: 0.9rem; color: #64748b; font-weight: 600; }
+    
+    #impact-container { align-items: center; justify-content: center; background: linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, rgba(15, 23, 42, 0.9) 100%); }
+    .impact-badge { font-size: 1.5rem; font-weight: 800; color: white; margin-top: 4px; letter-spacing: 0.5px; }
+    
+    #hr-explanation, #personal-baseline-box, #res-msg { text-align: left !important; align-items: flex-start !important; justify-content: flex-start !important; display: flex; flex-direction: column; }
+    #hr-explanation-text, #hr-confidence, .impact-sub { text-align: left !important; }
+
+    /* Popup Styling */
+    #ageCityPopup > div {
+        background: rgba(15, 23, 42, 0.95) !important; backdrop-filter: blur(15px);
+        border: 1px solid rgba(255,255,255,0.15) !important; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="main-app" style="width:100%; max-width:100%;">
+
+    <input type="hidden" id="selected-member-id" value="">
+
+    <div id="step-family" class="step-container active">
+        <div class="step-content">
+            <h2>Who is measuring?</h2>
+            <p>Select the profile for this heart rate check.</p>
+
+           <div id="family-list">
+    <div style="text-align:center; padding:40px 0;">
+        <div class="spinner"></div>
+        <p style="color:#64748b; margin:0;">Loading profiles...</p>
+    </div>
+</div>
+            <button id="btn-show-add-member" class="btn-add-new" onclick="showAddMemberForm()">
+                <span style="font-size:22px; line-height:1;">+</span> Add New Member
+            </button>
+
+            <div id="add-member-form" style="display:none; margin-top: 20px; background:rgba(15, 23, 42, 0.8); backdrop-filter:blur(10px); padding:24px; border-radius:24px; border:1px solid rgba(255,255,255,0.1); animation: fadeIn 0.3s ease;">
+                <h3 style="color:white; font-size:1.1rem; margin-bottom:5px; font-weight:700; text-align:center;">New Profile Details</h3>
+                <input type="text" id="new-member-name" placeholder="Enter Name (e.g. Rajesh)" autocomplete="off">
+                <select id="new-member-relation">
+                    <option value="" disabled selected>Select Relationship</option>
+                    <option value="Father">Father</option>
+                    <option value="Mother">Mother</option>
+                    <option value="Wife">Wife</option>
+                    <option value="Husband">Husband</option>
+                    <option value="Elder Brother">Elder Brother</option>
+                    <option value="Younger Brother">Younger Brother</option>
+                    <option value="Child">Child</option>
+                    <option value="Grandfather">Grandfather</option>
+                    <option value="Grandmother">Grandmother</option>
+                    <option value="Sibling">Sibling</option>
+                    <option value="Other">Other</option>
+                </select>
+                <button id="btn-save-member" class="btn" onclick="saveNewMember()">Save Profile</button>
+                <button onclick="hideAddMemberForm()" class="back-btn" style="margin-top:15px;">Cancel</button>
+            </div>
+
+            <button type="button" class="back-btn" id="back-to-dash-btn" onclick="window.location.href='{{ url_for('index') }}'">Go to Dashboard</button>
+        </div>
+    </div>
+
+    <div id="step-1" class="step-container">
+        <div class="step-content">
+            <h2>Activity Check</h2>
+            <p>Have you exercised in the last 15 minutes?</p>
+            <div style="margin-top:40px; display: flex; flex-direction: column; gap: 12px;">
+                <button id="btn-activity-yes" class="btn btn-outline" onclick="goToStep('step-2')">Yes, I was active</button>
+                <button id="btn-activity-no" class="btn" onclick="goToStep('step-2')">No, I am resting</button>
+            </div>
+            <button class="back-btn" onclick="goToStep('step-family')">Back to Profiles</button>
+        </div>
+    </div>
+
+    <div id="step-2" class="step-container">
+        <div class="step-content">
+            <h2>Calibration</h2>
+            <p>Verify details for accurate analysis.</p>
+            <div style="position: relative;">
+                <input type="text" id="input-city" placeholder="e.g. Surat, Gujarat" autocomplete="off">
+                <ul id="city-suggestions" class="suggestions-list" style="display:none; position: absolute;"></ul>
+            </div>
+            <input type="number" id="input-age" placeholder="Age (e.g. 25)">
+            <button id="btn-city-next" class="btn" onclick="goToStep('step-monitor')">Ready to Measure</button>
+            <button class="back-btn" onclick="goToStep('step-1')">Back</button>
+        </div>
+    </div>
+
+    <div id="step-3" class="step-container"><div class="step-content"></div></div>
+
+    <div id="step-monitor" class="step-container">
+        <div class="monitor-ui">
+            <div class="status-bar">
+                <span id="live-badge">LIVE SENSOR</span>
+                <span id="message-box">Ready</span>
+            </div>
+            <div id="cam-container">
+                <video id="video" autoplay muted playsinline></video>
+                
+<svg class="progress-ring" width="200" height="200" viewBox="0 0 200 200">
+    <circle class="ring-bg" cx="100" cy="100" r="90"></circle>
+    <circle id="ring-fill" class="ring-fill" cx="100" cy="100" r="90"></circle>
+</svg>
+
+
+                
+                <div id="overlay-text" class="overlay-center">
+                    <div id="overlay-label">HOLD</div>
+                    <div id="countdown">GO</div>
+                </div>
+            </div>
+            <div class="graph-container" style="max-width:400px;"><canvas id="graph"></canvas></div>
+            <div class="bpm-box" style="max-width:400px;">
+                <div id="pre-start-text" class="pre-start-text" style="color:#94a3b8; font-size:0.9rem;">Place finger gently, just cover the lens</div>
+                <div id="measuring-ui" style="display:none;">
+                    <div id="measure-percent" class="measure-percent">0%</div>
+                    <div class="measure-lines"><div id="line-1"></div><div id="line-2"></div><div id="line-3"></div></div>
+                </div>
+            </div>
+            <div style="width:100%; max-width:400px;">
+                <button id="btn-start-measure" class="btn" style="margin-top:10px;">START MEASUREMENT</button>
+            </div>
+            <button class="back-btn" onclick="goToStep('step-2')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="step-5" class="step-container">
+        <div class="step-content" style="max-width: 100%; text-align: left;">
+            <h2 style="text-align:center;">Analysis Report</h2>
+            <button id="btn-telehealth" class="btn btn-outline" style="display:none;">🧑‍⚕️ Consult Health Coach</button>
+            <p id="report-meta" style="text-align:center; font-size:0.9rem; margin-bottom:30px;"></p>
+            <div id="grid-container">
+                <div class="stat-box">
+                    <div class="stat-label">HEART RATE</div> 
+                    <div class="stat-val" id="res-bpm">--</div>
+                </div>
+                <div class="stat-box" id="aqi-box">
+                    <div class="stat-label" id="res-aqi-label">AIR QUALITY</div> 
+                    <div class="stat-val">
+                        <span id="res-aqi">--</span>
+                        <span class="aqi-unit">AQI</span>
+                    </div>
+                </div>
+            </div>
+            <div id="impact-container" class="stat-box" style="display:flex; flex-direction:column; margin-bottom:20px;">
+                <div class="stat-label">POLLUTION IMPACT</div>
+                <div class="impact-badge" id="res-impact-category">Calculating...</div>
+                <div class="impact-sub">Contribution: <span id="res-impact-val" class="impact-val">0%</span></div>
+            </div>
+            <p id="res-msg" style="background:rgba(6, 182, 212, 0.1); border:1px solid rgba(6, 182, 212, 0.2); padding:20px; border-radius:16px; font-size:0.95rem; color:#cffafe; text-align:left; line-height:1.5;"></p>
+            <div id="personal-baseline-box" style="display:none; margin-top:18px; background:rgba(34, 197, 94, 0.1); padding:16px; border-radius:16px; font-size:0.9rem; border:1px solid rgba(34, 197, 94, 0.2); color:#86efac; text-align: left;"></div>
+            <div id="hr-explanation" style="display:none; margin-top:18px; background:rgba(234, 179, 8, 0.1); padding:16px; border-radius:16px; border:1px solid rgba(234, 179, 8, 0.2); text-align: left;">
+                <div style="font-size:0.95rem; font-weight:700; color:#facc15; margin-bottom:8px; display:flex; align-items:center; gap:6px;">⚡ Insight</div>
+                <p id="hr-explanation-text" style="font-size:0.9rem; line-height:1.5; color:#fef08a; margin:0; text-align: left;"></p>
+                <div id="hr-confidence" style="margin-top:10px; font-size:0.75rem; color:rgba(254, 240, 138, 0.7); text-transform:uppercase; letter-spacing:0.5px; text-align: left;"></div>
+            </div>
+            <button id="btn-view-report" class="btn">📄 View Health Report</button>
+            <button id="btn-restart" class="btn btn-outline" onclick="goToStep('step-family')">Start New Scan</button>
+        </div>
+    </div>
+</div>
+
+<div id="ageCityPopup" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(5px); z-index:9999; align-items:center; justify-content:center;">
+  
+    <div style="background:#0f172a; padding:24px; border-radius:24px; width:90%; max-width:360px; border:1px solid rgba(255,255,255,0.1); box-shadow:0 25px 50px -12px rgba(0,0,0,0.8);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 style="color:white; font-size:1.3rem; margin:0;">Profile Missing</h3>
+        <span onclick="document.getElementById('medicalInfoBox').style.display='block'" style="cursor:pointer; font-size:1.2rem; opacity:0.8;">ℹ️</span>
+    </div>
+    <p style="color:#94a3b8; font-size:0.9rem; margin-bottom:20px; line-height:1.5;">To calculate your heart rate baseline accurately, we need these details.</p>
+    <input type="number" id="popup-age" placeholder="Enter Age">
+
+<div style="position: relative;">
+    <input type="text" id="popup-city" placeholder="Enter City" autocomplete="off">
+    <ul id="popup-city-suggestions" class="suggestions-list" style="display:none; position: absolute; top: 100%; left: 0; width: 100%; z-index: 10000; max-height: 150px; overflow-y: auto;"></ul>
+</div>
+
+    <button class="btn" onclick="saveAgeCity()" style="margin-top:20px;">Save & Continue</button>
+    <p style="margin-top:15px; font-size:0.8rem; color:#64748b; text-align:center;">You can also update this info anytime in your <a href="{{ url_for('profile') }}" style="color:var(--ring-color); text-decoration:none; font-weight:700;">Profile Page</a>.</p>
+    <div id="medicalInfoBox" style="display:none; margin-top:15px; font-size:0.85rem; color:#cbd5e1; background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; line-height:1.4;">
+        Your age and location determine "Safe Zones" for your heart rate. Data is not shared.
+        <div style="text-align:right; margin-top:8px;"><button onclick="document.getElementById('medicalInfoBox').style.display='none'" style="background:none;border:none;color:var(--ring-color); font-weight:700;">Close</button></div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+
+<script>
+    // --- GLOBAL VARIABLES FOR DATA COLLECTION ---
+    window.HCARE_HR_SAVED = false;
+    window.HCARE_ALERT_SHOWN = false;
+    window.HCARE_MEMBER_ID = localStorage.getItem("HCARE_MEMBER_ID") || null;
+    
+    // Global variables for Pollution Data
+    window.currentAqi = 0;
+    window.currentPm25 = 0;
+    window.currentPm10 = 0;
+
+ 
+
+    function stopCamera() {
+        const video = document.getElementById('video');
+        if (video && video.srcObject) {
+            const stream = video.srcObject;
+            const tracks = stream.getTracks();
+            tracks.forEach(track => {
+                const capabilities = track.getCapabilities();
+                if (capabilities.torch) {
+                    try { track.applyConstraints({ advanced: [{ torch: false }] }).catch(e => console.log("Torch off failed", e)); } catch (e) { /* ignore */ }
+                }
+                track.stop(); 
+            });
+            video.srcObject = null;
+        }
+    }
+
+    function goToStep(stepId) {
+        if (stepId !== 'step-monitor') {
+            stopCamera();
+        }
+
+        if (stepId === "step-family") {
+            window.HCARE_HR_SAVED = false;
+        }
+
+        document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
+        const target = document.getElementById(stepId);
+        if(target) target.classList.add('active');
+
+        if (stepId === "step-2") {
+            autofillLocationStep();
+            if (window.HCARE_NEEDS_MEDICAL) {
+                if (!window.HCARE_ALERT_SHOWN) {
+                    window.HCARE_ALERT_SHOWN = true;
+                }
+                setTimeout(showAgeCityPopup, 300);
+            }
+        }
+
+        // --- TRIGGER AQI FETCH WHEN GOING TO MONITOR ---
+       // ... inside goToStep(stepId) ...
+
+    if (stepId === "step-monitor") {
+        // 1. Check if we have a city
+        const city = window.HCARE_CITY || document.getElementById("input-city").value;
+        
+        if (!city) {
+            console.warn("⚠️ No city found, showing popup.");
+            showAgeCityPopup();
+            return;
+        }
+
+        console.log("🚀 Starting Monitor Step. Fetching AQI for:", city);
+        
+        // 2. FORCE FETCH AQI (This fills window.currentAqi)
+        fetchAQI(city); 
+        
+        // 3. Fallback: If using app.js logic, ensure that works too
+        if (typeof fetchRealAQIByCity === "function") {
+             fetchRealAQIByCity(city).then(data => {
+                 if(data) {
+                     console.log("✅ App.js Fetch Success:", data);
+                     // Sync data to global scope just in case
+                     window.currentAqi = data.aqi;
+                     window.currentPm25 = data.pm25;
+                     window.currentPm10 = data.pm10;
+                 }
+             });
+        }
+    }
+    }
+
+// --- INITIALIZATION ---
+document.addEventListener("DOMContentLoaded", function() {
+    setupPopupAutocomplete(); // Sets up the city search
+    loadMembers();            // Loads members ONLY ONCE
+});
+
+    async function loadMembers() {
+const list = document.getElementById("family-list");
+    
+    // ONLY show spinner if list is empty (prevents flashing if data is already there)
+    if (list.children.length === 0) {
+         list.innerHTML = `
+            <div style="text-align:center; padding:40px 0;">
+                <div class="spinner"></div>
+                <p style="color:#64748b; margin:0;">Loading profiles...</p>
+            </div>`;
+    }
+
+        try {
+            const res = await fetch('/api/family-members');
+            let members = await res.json(); 
+            
+            const list = document.getElementById("family-list");
+            list.innerHTML = "";
+
+            if (!members || members.length === 0) {
+                list.innerHTML = `<p style="color:#ef4444;">No profiles found.</p>`;
+                return;
+            }
+
+            members.sort((a, b) => {
+                const relA = a.relationship.toLowerCase();
+                const relB = b.relationship.toLowerCase();
+                if (relA === 'self') return -1;
+                if (relB === 'self') return 1;
+                return 0;
+            });
+
+// ... sorting logic ...
+
+            // UPDATE: Added 'index' to the loop arguments
+            members.forEach((m, index) => {
+                const isSelf = m.relationship.toLowerCase() === 'self';
+                const displayName = isSelf ? "You (Self)" : m.name;
+                const displayRelation = isSelf ? m.name : m.relationship;
+                
+                const card = document.createElement("div");
+                
+                // UPDATE: Added 'animate-card' class
+                card.className = `member-card animate-card ${isSelf ? 'is-self' : ''}`;
+                
+                // UPDATE: Add dynamic delay (0s, 0.1s, 0.2s...) so they cascade in
+                card.style.animationDelay = `${index * 0.1}s`;
+                
+                card.onclick = (e) => {
+                    if (e.target.closest('.delete-btn')) return;
+                    selectMember(m.id, displayName, m.relationship);
+                };
+
+                const avatarChar = isSelf ? '❤️' : m.name.charAt(0).toUpperCase();
+                const avatarContent = `<div class="member-avatar"><span>${avatarChar}</span></div>`;
+                
+                const deleteBtn = isSelf ? '' : `
+                    <div class="delete-btn" onclick="deleteMember(${m.id}, '${m.name}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </div>`;
+
+                card.innerHTML = `${avatarContent}<div class="member-info"><div class="member-name">${displayName}</div><div class="member-relation">${displayRelation}</div></div>${deleteBtn}`;
+                list.appendChild(card);
+            });        } catch (e) { console.error(e); }
+    }
+
+    async function fetchMemberMedical(memberId) {
+        if (!memberId) return;
+        const res = await fetch(`/api/member/${memberId}`);
+        const data = await res.json();
+        console.log("🧠 Member Medical:", data);
+        window.HCARE_AGE = data.age;
+        window.HCARE_CITY = data.city;
+        window.HCARE_NEEDS_MEDICAL = (!data.age || !data.city);
+    }
+
+    function selectMember(id, name, relationship) {
+        console.log("✅ SELECTED MEMBER:", id, name);
+        document.getElementById("selected-member-id").value = id;
+        localStorage.setItem("HCARE_MEMBER_ID", id);
+        localStorage.setItem("HCARE_MEMBER_NAME", name); 
+        if (!relationship) relationship = (name === "{{ current_user.username }}") ? "Self" : "Family Member";
+        localStorage.setItem("HCARE_MEMBER_RELATION", relationship);
+        window.HCARE_MEMBER_ID = id;
+        fetchMemberMedical(id);
+        goToStep('step-1');
+    }
+
+    function showAddMemberForm() { 
+        document.getElementById("family-list").style.display = "none"; 
+        document.getElementById("btn-show-add-member").style.display = "none"; 
+        document.getElementById("add-member-form").style.display = "block"; 
+    }
+    
+    function hideAddMemberForm() { 
+        document.getElementById("add-member-form").style.display = "none"; 
+        document.getElementById("family-list").style.display = "flex"; 
+        document.getElementById("btn-show-add-member").style.display = "flex"; 
+    }
+    
+    async function saveNewMember() {
+        const name = document.getElementById("new-member-name").value;
+        const relation = document.getElementById("new-member-relation").value;
+        if (!name || !relation) return alert("Fill all fields");
+        
+        const response = await fetch('/api/family-members/add', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ name, relationship: relation }) 
+        });
+        
+        const result = await response.json();
+        if (!result.success) {
+            alert("Error adding member: " + (result.error || "Unknown"));
+            return;
+        }
+        
+        hideAddMemberForm(); 
+        await loadMembers(); 
+    }
+
+    async function deleteMember(id, name) {
+        if(confirm("Remove " + name + "?")) {
+            await fetch(`/api/family-members/delete/${id}`, { method: 'DELETE' });
+            loadMembers();
+        }
+    }
+
+    function showAgeCityPopup() {
+        document.getElementById("ageCityPopup").style.display = "flex";
+    }
+
+    async function saveAgeCity() {
+        const ageInput = document.getElementById("popup-age").value;
+        const city = document.getElementById("popup-city").value;
+        const memberId = window.HCARE_MEMBER_ID || localStorage.getItem("HCARE_MEMBER_ID");
+
+        if (!ageInput || !city) return alert("Please fill both Age and City");
+        if (!memberId) return alert("Error: No member selected.");
+
+        const age = parseInt(ageInput);
+
+        try {
+            // NOTE: We don't send PM25/PM10 here because this updates PROFILE, not Measurement
+            const res = await fetch("/api/member/update-medical", {
+                method: "POST", 
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ member_id: memberId, age: age, city: city })
+            });
+
+            const data = await res.json();
+            
+            if (!data.success) {
+                alert("Error saving: " + (data.error || "Unknown error"));
+                return;
+            }
+
+            window.HCARE_AGE = age;
+            window.HCARE_CITY = city;
+            window.HCARE_NEEDS_MEDICAL = false;
+
+            document.getElementById("input-age").value = age;
+            document.getElementById("input-city").value = city;
+            document.getElementById("ageCityPopup").style.display = "none";
+            
+        } catch (error) {
+            console.error("Save failed:", error);
+            alert("Network error.");
+        }
+    }
+
+    function autofillLocationStep() {
+        const cityEl = document.getElementById("input-city");
+        const ageEl = document.getElementById("input-age");
+        if (window.HCARE_CITY && cityEl) cityEl.value = window.HCARE_CITY;
+        if (window.HCARE_AGE && ageEl) ageEl.value = window.HCARE_AGE;
+    }
+
+
+// --- CITY AUTOCOMPLETE LOGIC ---
+
+// 1. The City Data
+const cityList = [
+  "Ahmedabad","Surat","Vadodara","Rajkot","Gandhinagar",
+  "Mumbai","Pune","Nagpur","Nashik","Thane", "Ankleshwar",
+  "Delhi","Noida","Ghaziabad","Faridabad","Gurugram",
+  "Bengaluru","Chennai","Hyderabad","Kolkata",
+  "Jaipur","Udaipur","Jodhpur","Ajmer","Kota","Bikaner",
+  "Indore","Bhopal","Gwalior","Jabalpur","Ujjain","Sagar",
+  "Lucknow","Kanpur","Varanasi","Prayagraj","Agra","Meerut",
+  "Bareilly","Aligarh","Moradabad","Saharanpur",
+  "Bhavnagar","Jamnagar","Junagadh","Porbandar","Anand",
+  "Nadiad","Navsari","Valsad","Vapi","Morbi",
+  "Aurangabad","Solapur","Kolhapur","Sangli","Satara",
+  "Amravati","Akola","Latur","Nanded","Parbhani",
+  "Coimbatore","Madurai","Tiruchirappalli","Salem","Erode",
+  "Vellore","Tirunelveli","Thoothukudi",
+  "Kochi","Thiruvananthapuram","Kozhikode","Thrissur",
+  "Mysuru","Mangaluru","Hubballi","Belagavi",
+  "Vijayawada","Guntur","Nellore","Tirupati","Kakinada",
+  "Bhubaneswar","Cuttack","Rourkela",
+  "Patna","Gaya","Muzaffarpur","Bhagalpur",
+  "Ranchi","Dhanbad","Jamshedpur",
+  "Siliguri","Asansol","Durgapur",
+  "Chandigarh","Dehradun","Haridwar","Roorkee",
+  "Shimla","Solan","Una",
+  "Jammu","Srinagar","Anantnag",
+  "Amritsar","Ludhiana","Jalandhar","Patiala","Bathinda",
+  "Guwahati","Silchar","Dibrugarh",
+  "Imphal","Agartala","Aizawl","Kohima","Dimapur",
+  "Shillong","Itanagar",
+  "Raipur","Bilaspur","Durg",
+  "Panaji","Margao",
+  "Port Blair"
+];
+
+function setupPopupAutocomplete() {
+    const input = document.getElementById("popup-city");
+    const list = document.getElementById("popup-city-suggestions");
+
+    if(!input || !list) return;
+
+    // Listen for typing
+    input.addEventListener("input", function() {
+        const val = this.value.toLowerCase();
+        list.innerHTML = ""; // Clear current list
+        
+        if (!val) {
+            list.style.display = "none";
+            return;
+        }
+
+        // Filter cities (starts with)
+        const matches = cityList.filter(c => c.toLowerCase().startsWith(val));
+
+        if (matches.length > 0) {
+            matches.forEach(city => {
+                const li = document.createElement("li");
+                li.innerText = city;
+                // Click handler
+                li.onclick = function() {
+                    input.value = city;
+                    list.style.display = "none";
+                };
+                list.appendChild(li);
+            });
+            list.style.display = "block";
+        } else {
+            list.style.display = "none";
+        }
+    });
+
+    // Close list if clicking outside
+    document.addEventListener("click", function(e) {
+        if (e.target !== input && e.target !== list) {
+            list.style.display = "none";
+        }
+    });
+}
+
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const badge = document.getElementById('live-badge');
+    const statusBar = document.querySelector('.status-bar');
+
+    // Watch for the Live Sensor badge appearing
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === "attributes" && mutation.attributeName === "style") {
+                // If opacity is 1 (Visible), snap text to Right
+                if (badge.style.opacity === '1') {
+                    statusBar.classList.add('mode-measuring');
+                } else {
+                    // Snap text back to Center
+                    statusBar.classList.remove('mode-measuring');
+                }
+            }
+        });
+    });
+
+    if(badge) observer.observe(badge, { attributes: true });
+});
+</script>
+<script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+{% endblock %}

@@ -1,0 +1,869 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}HridyaCare – Tracker{% endblock %}
+
+{% block info_popup %}
+    <div style="text-align: left;">
+        <h3 style="color: #f43f5e; margin-bottom: 10px;">📊 Tracker Guide</h3>
+        <p style="color: #cbd5e1; font-size: 0.95rem; margin-bottom: 15px;">
+            This dashboard visualizes your historical health data.
+        </p>
+        <ul style="color: #94a3b8; font-size: 0.9rem; padding-left: 20px; line-height: 1.6;">
+            <li style="margin-bottom: 8px;">
+                <strong>Heart Rate:</strong> Trends (📈/📉) are locked until you have at least <strong>3 measurements</strong>.
+            </li>
+            <li style="margin-bottom: 8px;">
+                <strong>Stress Radar:</strong> The chart below shows 5 dimensions of stress.
+            </li>
+            <li>
+                <strong>Family:</strong> Use the dropdown in the top right to view data for other family members.
+            </li>
+        </ul>
+    </div>
+{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    /* --- CORE STYLES --- */
+    :root {
+        --bg-dark:#0f172a;
+        --card-bg:#1e293b;
+        --text-main:#f8fafc;
+        --text-muted:#94a3b8;
+        --primary:#f43f5e;
+        --success:#10b981;
+        --low: #4ade80;
+        --moderate: #fbbf24;
+        --high: #f87171;
+    }
+
+    /* --- CONTENT WRAPPER --- */
+    /* Updated: Uses calc() to push the footer down so loader fills the gap */
+    .content-wrapper {
+        position: relative; 
+        min-height: calc(100vh - 80px); /* Adjusts height to fit between header/footer */
+        width: 100%;
+        padding-bottom: 20px; /* Adds space at bottom */
+    }
+
+    /* --- LOADING OVERLAY --- */
+    #loadingOverlay {
+        position: absolute; 
+        top: -50px;
+        height: calc(100% + 50px); /* Increases height to maintain bottom coverage */ 
+        left: 0; 
+        width: calc(100% + 100px); /* Adds 50px to left and 50px to right to fill the space */
+        width: 100%; 
+        height: 100%;
+        background: rgba(15, 23, 42, 0.95); /* Slightly darker for better contrast */
+        backdrop-filter: blur(6px);
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; 
+        align-items: center;
+        z-index: 50; 
+        /* REMOVED: border-radius: 12px; -> This fixes the gap at corners */
+        border-radius: 0; 
+        transition: 0.3s opacity;
+        visibility: hidden; 
+        opacity: 0;
+    }
+
+    .spinner {
+        width: 50px; height: 50px;
+        border: 4px solid rgba(244, 63, 94, 0.1);
+        border-top: 4px solid var(--primary);
+        border-radius: 50%; animation: spin 1s linear infinite;
+        margin-bottom: 15px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .loading-text { color: #fff; font-weight: 600; font-size: 1.1rem; letter-spacing: 0.5px; }
+
+    /* Basic Layout */
+    .report-card { max-width:420px; margin:auto; background:var(--card-bg); border-radius:18px; padding:22px; box-shadow:0 10px 35px rgba(0,0,0,.45); }
+    h2 { text-align:center; color:var(--primary); margin-bottom:22px; font-family:'Poppins',system-ui,sans-serif; font-weight:600; letter-spacing:.3px; }
+    
+    .chart-card { background: linear-gradient(180deg, #0b1220, #0a1328); border-radius: 18px; padding: 20px; margin-top: 20px; border: 1px solid rgba(255,255,255,0.05); }
+    
+    .stats-row { display: flex; justify-content: space-between; text-align: center; margin-bottom: 20px; }
+    .stats-row h3 { color: white; font-size: 22px; margin: 0; }
+    .stats-row p { color: #94a3b8; font-size: 12px; margin: 0; }
+    .stat-divider { width: 1px; height: 30px; background: rgba(255,255,255,0.1); }
+
+    /* Header */
+    .tracker-page-header { display: flex; flex-direction: column; align-items: center; margin-bottom: 25px; width: 100%; gap: 15px; }
+    .tracker-page-title { font-size: 1.75rem; font-weight: 800; color: #fff; text-align: center; width: 100%; margin: 0; }
+    .header-controls { display: flex; align-items: center; width: 100%; gap: 12px; }
+
+    /* Family Select */
+    .family-select-wrapper { position: relative; width: calc(80% - 6px); flex: 0 0 calc(80% - 6px); }
+    .family-select { appearance: none; -webkit-appearance: none; background: #1e293b; color: #f8fafc; border: 1px solid rgba(255,255,255,0.15); padding: 12px 35px 12px 16px; border-radius: 12px; font-size: 14px; font-weight: 500; outline: none; cursor: pointer; width: 100%; transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    
+    /* Bell */
+    .bell-wrapper { position: relative; cursor: pointer; width: calc(20% - 6px); flex: 0 0 calc(20% - 6px); display: flex; justify-content: center; align-items: center; }
+    .bell-anchor { position: relative; display: inline-block; width: 44px; height: 44px; }
+    .bell-icon { font-size: 20px; background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.15); padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; transition: all 0.2s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    .bell-icon:hover { background: #253146; border-color: var(--primary); color: #fff; }
+    .notification-dot { position: absolute; top: 2px; right: 2px; width: 12px; height: 12px; background: #f43f5e; border-radius: 50%; border: 2px solid #0f172a; display: block; z-index: 10; }
+    
+    /* Notifications Dropdown */
+    .notification-menu { display: none; position: absolute; top: 55px; right: 0; width: 280px; max-width: 90vw; background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); overflow: hidden; animation: slideDown 0.2s ease-out; z-index: 1000; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .notif-header { padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #cbd5e1; }
+    .clear-all { color: #f43f5e; cursor: pointer; font-size: 11px; }
+    .notif-list { max-height: 300px; overflow-y: auto; }
+    .notif-item { display: flex; gap: 12px; padding: 12px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.2s; cursor: pointer; }
+    .notif-item.unread { background: rgba(59, 130, 246, 0.08); }
+
+    /* Heart Rate Bar */
+    .heart-rate-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .heart-rate-bar .title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+    .measure-btn { background: #f43f5e; color: #fff; border: none; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3); transition: 0.2s; }
+    .measure-btn:active { transform: scale(0.98); }
+    .measure-btn.secondary { background: rgba(255,255,255,0.1); box-shadow: none; }
+
+    /* Advice Card */
+    .modern-advice-card { margin-top: 20px; background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; display: flex; gap: 14px; align-items: flex-start; }
+    .advice-icon-box { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .trend-up .advice-icon-box { background: rgba(244, 63, 94, 0.2); color: #f43f5e; }
+    .trend-down .advice-icon-box { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .trend-stable .advice-icon-box { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+    .advice-content h4 { margin: 0 0 8px; font-size: 15px; color: #fff; font-weight: 700; }
+    .advice-bullets { margin: 0; padding-left: 18px; color: #cbd5e1; font-size: 13px; line-height: 1.6; }
+
+    /* Stress Components */
+    .stress-hero { display: flex; align-items: center; gap: 24px; margin: 24px 0; }
+    .stress-circle { width: 80px; height: 80px; border-radius: 50%; border: 4px solid #ff2d55; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255, 45, 85, 0.1); box-shadow: 0 0 20px rgba(255, 45, 85, 0.2); }
+    .stress-circle .score-val { font-size: 28px; font-weight: 900; line-height: 1; text-shadow: 0 0 10px rgba(255, 45, 85, 0.5); }
+    .stress-circle .score-label { font-size: 11px; color: #ff2d55; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-top: 2px; }
+    .stress-status h3 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    .stress-status p { margin: 6px 0 0; font-size: 13px; color: #94a3b8; font-weight: 500; }
+
+    /* Stress Breakdown */
+    .breakdown-card { background: #131c2e; border-radius: 20px; padding: 24px; margin-top: 30px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); }
+    .breakdown-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; }
+    .metric { margin-bottom: 18px; }
+    .metric-header { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-bottom: 8px; color: #cbd5e1; }
+    .metric-bar { width: 100%; height: 10px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; position: relative; }
+    .metric-fill { height: 100%; border-radius: 999px; width: 0%; transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 0 10px currentColor; position: relative; }
+    .metric-fill::after { content: ''; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); transform: translateX(-100%); animation: shimmer 2s infinite; }
+    @keyframes shimmer { 100% { transform: translateX(100%); } }
+
+    /* Tooltip */
+    .info-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; font-size: 11px; font-weight: bold; border-radius: 50%; background: rgba(255,255,255,0.1); color: #fff; cursor: help; margin-left: 8px; position: relative; border: 1px solid rgba(255,255,255,0.2); transition: background 0.2s; }
+    .info-icon:hover { background: var(--primary); border-color: var(--primary); }
+    .tooltip { position: absolute; bottom: 150%; left: 50%; transform: translateX(-50%) scale(0.9); background: #1e293b; color: #f1f5f9; padding: 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; width: 260px; opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); z-index: 100; text-align: left; font-weight: 400; }
+    .tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
+    .info-icon:hover .tooltip { opacity: 1; pointer-events: auto; transform: translateX(-50%) scale(1); }
+
+    /* Canvas */
+    #stressRadar { max-width: 100%; height: auto; filter: drop-shadow(0 0 10px rgba(255, 45, 85, 0.2)); min-height: 320px; }
+
+    /* Insight Card */
+    .insight-card { margin-top: 15px; background:rgba(255,45,85,0.1); padding:16px; border-radius:14px; border:1px dashed rgba(255,45,85,0.3); display: flex; gap: 12px; align-items: flex-start;}
+    .insight-card p { margin:0; font-size:14px; color:#fecdd3; line-height: 1.5; font-weight: 500; }
+
+    /* Trend Pills */
+    .trend-under-avg { margin-top: 6px; font-size: 13px; color: #e5e7eb; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.12); padding: 6px 12px; border-radius: 10px; display: inline-block; font-weight: 600; }
+    .trend-pending { background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.4); color: #fbbf24; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(234, 179, 8, 0.15); animation: pulseBorder 3s infinite; padding: 8px 16px; }
+    @keyframes pulseBorder { 0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.2); border-color: rgba(234, 179, 8, 0.4); } 50% { box-shadow: 0 0 0 4px rgba(234, 179, 8, 0); border-color: rgba(234, 179, 8, 0.8); } 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); border-color: rgba(234, 179, 8, 0.4); } }
+
+    /* --- CTA CARD --- */
+    .cta-card { 
+        padding: 24px 24px 16px 24px; 
+        background: linear-gradient(135deg, #6366f1, #4338ca);
+        margin-top: 24px; 
+        border-radius: 24px; 
+        position: relative; 
+        overflow: hidden; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 18px; 
+        border: 1px solid rgba(255,255,255,0.1); 
+        box-shadow: 0 10px 30px rgba(67, 56, 202, 0.4); 
+    }
+    .cta-bg-icon { position: absolute; top: -15px; right: -15px; font-size: 100px; opacity: 0.1; transform: rotate(20deg); pointer-events: none; }
+    .cta-content h3 { font-size: 20px; font-weight: 700; margin: 0 0 8px; color: #fff; }
+    .cta-content p { font-size: 14px; margin: 0; color: #e0e7ff; line-height: 1.5; }
+    .cta-btn { background: #ffffff; color: #4f46e5; border: none; padding: 16px; border-radius: 16px; font-weight: 700; width: 100%; cursor: pointer; transition: transform 0.2s; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 0; }
+    .cta-btn:active { transform: scale(0.98); }
+</style>
+
+{% endblock %}
+
+{% block content %}
+    
+    <div class="content-wrapper">
+        
+        <div id="loadingOverlay">
+            <div class="spinner"></div>
+            <div class="loading-text">Fetching health records...</div>
+        </div>
+
+        <div class="tracker-page-header">
+            <div class="tracker-page-title">Your Insights</div>
+            <div class="header-controls">
+                <div class="family-select-wrapper">
+                    <select id="memberSelect" class="family-select" onchange="changeMember()">
+                        <option value="">Loading family...</option>
+                    </select>
+                </div>
+                <div class="bell-wrapper" onclick="toggleNotifications(event)">
+                    <div class="bell-anchor">
+                        <span class="bell-icon">🔔</span>
+                        <span class="notification-dot" id="notifBadge"></span>
+                    </div>
+                    <div id="notificationDropdown" class="notification-menu">
+                        <div class="notif-header">
+                            <span>Notifications</span>
+                            <span class="clear-all" onclick="clearNotifications(event)">Clear</span>
+                        </div>
+                        <div class="notif-list" id="notifList"></div> 
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card chart-card" style="position: relative; min-height: 300px;">
+            <div class="heart-rate-bar">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:24px;">❤️</span>
+                    <span class="title">Heart Rate</span>
+                </div>
+                <button class="measure-btn" onclick="location.href='{{ url_for('heart_rate') }}'">
+                    Measure Now
+                </button>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-item">
+                    <h3 id="avgBpm">--</h3>
+                    <p>AVG BPM</p>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <h3 id="maxBpm">--</h3>
+                    <p>MAX</p>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <h3 id="minBpm">--</h3>
+                    <p>MIN</p>
+                </div>
+            </div>
+            
+            <div style="text-align:center;">
+                <div id="graphTrendSymbol" class="trend-under-avg">Loading trend...</div>
+            </div>
+
+            <div id="chartContainer" style="position: relative; height: 250px; margin-top: 20px;">
+                <canvas id="heartRateChart"></canvas>
+            </div>
+
+            <div id="emptyState" style="display:none; margin-top: 20px;">
+                <div style="background: linear-gradient(145deg, rgba(244, 63, 94, 0.15), rgba(30, 41, 59, 0.6)); border: 1px dashed rgba(244, 63, 94, 0.4); border-radius: 20px; padding: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; backdrop-filter: blur(10px);">
+                    <div style="width: 50px; height: 50px; background: rgba(244, 63, 94, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 0 15px rgba(244, 63, 94, 0.3);">📉</div>
+                    <div>
+                        <h4 style="margin: 0; color: #ffe4e6; font-size: 1.1rem; font-weight: 700;">Trend Unavailable</h4>
+                        <p id="emptyStateText" style="margin: 6px 0 0; color: #fda4af; font-size: 0.9rem; line-height: 1.5; max-width: 300px;">
+                            We need at least 3 measurements to build your personal heart rate trend.
+                        </p>
+                    </div>
+                    <button onclick="location.href='{{ url_for('heart_rate') }}'" style="margin-top: 8px; background: #f43f5e; color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 600; font-size: 0.9rem; cursor: pointer; box-shadow: 0 4px 12px rgba(244, 63, 94, 0.4); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        Measure Now
+                    </button>
+                </div>
+            </div>
+
+            <div id="modernAdviceCard" class="modern-advice-card" style="display:none;">
+                <div class="advice-icon-box" id="adviceIconBox">
+                    <span id="adviceIcon" style="font-size: 24px;"></span>
+                </div>
+                <div class="advice-content">
+                    <h4 id="adviceHeader">Analyzing...</h4>
+                    <ul id="adviceList" class="advice-bullets"></ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="stressInfoBox" style="display: none; margin-top: 20px;">
+            <div style="background: linear-gradient(145deg, rgba(99, 102, 241, 0.15), rgba(30, 41, 59, 0.6)); border: 1px dashed rgba(99, 102, 241, 0.4); border-radius: 20px; padding: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; backdrop-filter: blur(10px);">
+                <div style="width: 50px; height: 50px; background: rgba(99, 102, 241, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);">🧠</div>
+                <div>
+                    <h4 style="margin: 0; color: #e0e7ff; font-size: 1.1rem; font-weight: 700;">No Stress Data Yet</h4>
+                    <p style="margin: 6px 0 0; color: #94a3b8; font-size: 0.9rem; line-height: 1.5; max-width: 300px;">
+                        Complete at least one measurement to unlock your Stress Radar and insights.
+                    </p>
+                </div>
+                <button onclick="location.href='{{ url_for('stress_check') }}'" style="margin-top: 8px; background: #6366f1; color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 600; font-size: 0.9rem; cursor: pointer; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    Start Analysis
+                </button>
+            </div>
+        </div>
+
+        <div class="card chart-card" id="stressCard" style="display:none; margin-top:20px; position: relative; min-height: 300px;">
+            <div class="heart-rate-bar">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:24px;">🧠</span>
+                    <span class="title">Stress Level</span>
+                </div>
+                <button class="measure-btn secondary" onclick="location.href='{{ url_for('stress_check') }}'">
+                    Check Again
+                </button>
+            </div>
+
+            <div class="stress-hero">
+                <div class="stress-circle">
+                    <span id="stressScore" class="score-val">--</span>
+                    <span class="score-label">Score</span>
+                </div>
+                <div class="stress-status">
+                    <h3 id="stressLevel">--</h3>
+                    <p id="stressMeasuredTime">Loading...</p>
+                </div>
+            </div>
+
+            <div class="chart-container" style="position: relative; width: 100%; display: flex; justify-content: center; margin: 20px 0;">
+                <canvas id="stressRadar"></canvas>
+            </div>
+
+            <div id="stressMetricsContainer"></div>
+
+            <div class="insight-card">
+                <span style="font-size:20px;">💡</span>
+                <p id="stressInsightText">Loading insights...</p>
+            </div>
+        </div>
+
+        <div class="card cta-card" id="telehealth-cta">
+            <div class="cta-bg-icon">🩺</div>
+            <div class="cta-content">
+                <h3>Need Expert Guidance?</h3>
+                <p>Your recent trends suggest professional advice might help optimize your health.</p>
+            </div>
+            <button id="btn-telehealth-tracker" class="cta-btn">
+                Chat with Health Coach
+            </button>
+        </div>
+
+    </div> 
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let selectedMemberId = null;
+
+    fetch("/api/get-selected-member")
+      .then(r => r.json())
+      .then(d => selectedMemberId = d.member_id);
+
+    /* ========================================= */
+    /* === GLOBAL LOGIC === */
+    /* ========================================= */
+    let heartRateChartInstance = null;
+
+    function toggleLoader(show) {
+        const overlay = document.getElementById("loadingOverlay");
+        overlay.style.visibility = show ? "visible" : "hidden";
+        overlay.style.opacity = show ? "1" : "0";
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        loadFamilyMembers();
+    });
+
+    async function loadFamilyMembers() {
+        toggleLoader(true);
+        try {
+            const res = await fetch('/api/family-members');
+            let members = await res.json();
+            const select = document.getElementById('memberSelect');
+            select.innerHTML = ''; 
+
+            if (members.length === 0) {
+                select.innerHTML = '<option>No members found</option>';
+                toggleLoader(false);
+                return;
+            }
+
+            // 1. Sort: Self first, then others
+            members.sort((a, b) => {
+                const relA = a.relationship.toLowerCase();
+                const relB = b.relationship.toLowerCase();
+                if (relA === 'self') return -1;
+                if (relB === 'self') return 1;
+                return 0;
+            });
+
+            // 2. Generate Options
+            members.forEach(m => {
+                const isSelf = m.relationship.toLowerCase() === 'self';
+                const label = isSelf ? "You (Self)" : `${m.relationship} - ${m.name}`;
+                select.innerHTML += `<option value="${m.id}">${label}</option>`;
+            });
+
+            // 3. Selection Logic
+            if (selectedMemberId) {
+                select.value = selectedMemberId;
+                // Wait for data to load
+                await Promise.all([
+                    loadHeartRateData(selectedMemberId),
+                    loadStress(selectedMemberId)
+                ]);
+            } else {
+                select.value = members[0].id;
+                await Promise.all([
+                    loadHeartRateData(members[0].id),
+                    loadStress(members[0].id)
+                ]);
+            }
+
+        } catch(e) {
+            console.error("Error loading members:", e);
+            document.getElementById('memberSelect').innerHTML = '<option>Error loading</option>';
+        } finally {
+            toggleLoader(false);
+        }
+    }
+
+    async function changeMember() {
+        toggleLoader(true);
+        const id = document.getElementById('memberSelect').value;
+        try {
+            await Promise.all([
+                loadHeartRateData(id),
+                loadStress(id)
+            ]);
+        } catch(e) {
+            console.error(e);
+        } finally {
+            toggleLoader(false);
+        }
+    }
+
+    function parseDateString(str) {
+        if (!str) return { date: "--", time: "--" };
+        const dateObj = new Date(str);
+        if (isNaN(dateObj.getTime())) return { date: str, time: "" };
+        const date = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const time = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        return { date, time };
+    }
+
+    async function loadHeartRateData(memberId) {
+        try {
+            // Reset UI (No separate loaders anymore)
+            document.getElementById('avgBpm').innerText = "..";
+            document.getElementById('chartContainer').style.display = 'block';
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById("modernAdviceCard").style.display = "none";
+            document.getElementById("graphTrendSymbol").style.display = "none";
+
+            const res = await fetch(`/api/heart-rate/last-7?member_id=${memberId}`);
+            const data = await res.json();
+            
+            const count = data ? data.length : 0;
+            const trendSymbol = document.getElementById("graphTrendSymbol");
+
+            if (count === 0) {
+                document.getElementById('chartContainer').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'block';
+                document.getElementById('avgBpm').innerText = "--";
+                document.getElementById('maxBpm').innerText = "--";
+                document.getElementById('minBpm').innerText = "--";
+                generateNotifications([]); 
+                return;
+            }
+
+            data.reverse(); 
+            
+            const bpmValues = data.map(d => d.bpm);
+            document.getElementById('avgBpm').innerText = Math.round(bpmValues.reduce((a, b) => a + b, 0) / bpmValues.length);
+            document.getElementById('maxBpm').innerText = Math.max(...bpmValues);
+            document.getElementById('minBpm').innerText = Math.min(...bpmValues);
+
+            generateNotifications(data);
+
+            if (count < 3) {
+                const remaining = 3 - count;
+                const plural = remaining === 1 ? "measurement" : "measurements";
+                trendSymbol.style.display = "inline-flex";
+                trendSymbol.className = "trend-under-avg trend-pending";
+                trendSymbol.innerHTML = `🔒 Trend Locked (${remaining} ${plural} to go)`;
+                renderHRChart(data);
+                return;
+            }
+
+            const firstAvg = (data[0].bpm + data[1].bpm + data[2].bpm) / 3;
+            const lastAvg = (data[data.length - 1].bpm + data[data.length - 2].bpm + data[data.length - 3].bpm) / 3;
+            const change = lastAvg - firstAvg;
+
+            const card = document.getElementById("modernAdviceCard");
+            const icon = document.getElementById("adviceIcon");
+            const header = document.getElementById("adviceHeader");
+            const list = document.getElementById("adviceList");
+            
+            card.style.display = "flex";
+            trendSymbol.style.display = "inline-block";
+            trendSymbol.className = "trend-under-avg"; 
+
+            if (change > 5) {
+                card.className = "modern-advice-card trend-up";
+                icon.innerText = "📈";
+                trendSymbol.innerHTML = "📈 <span> Upward Trend</span>";
+                trendSymbol.style.color = "#f43f5e";
+                header.innerText = "Trending Up";
+                list.innerHTML = `<li>Monitor stress levels and hydration.</li><li>Consider resting if this persists.</li>`;
+            } else if (change < -5) {
+                card.className = "modern-advice-card trend-down";
+                icon.innerText = "📉";
+                trendSymbol.innerHTML = "📉 <span> Decreasing Trend</span>";
+                trendSymbol.style.color = "#22c55e";
+                header.innerText = "Trending Down";
+                list.innerHTML = `<li>Signs of good recovery or fitness improvement.</li><li>Ensure you aren't over-fatigued.</li>`;
+            } else {
+                card.className = "modern-advice-card trend-stable";
+                icon.innerText = "➖";
+                trendSymbol.innerHTML = "➖ <span> Stable</span>";
+                trendSymbol.style.color = "#02adfdff";
+                header.innerText = "Stable Trend";
+                list.innerHTML = `<li>Your heart rate is consistent.</li><li>Keep up your current routine.</li>`;
+            }
+
+            renderHRChart(data);
+
+        } catch (e) { 
+            console.error("Error fetching HR data:", e); 
+        }
+    }
+
+    function renderHRChart(data) {
+        const ctx = document.getElementById('heartRateChart').getContext('2d');
+        if (heartRateChartInstance) heartRateChartInstance.destroy();
+
+        const labels = data.map(d => {
+            const dt = parseDateString(d.time);
+            return `${dt.date} ${dt.time}`;
+        });
+        const bpmValues = data.map(d => d.bpm);
+
+        heartRateChartInstance = new Chart(ctx, {
+            type: 'bar', 
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Heart Rate',
+                    data: bpmValues,
+                    backgroundColor: '#f43f5e',
+                    borderRadius: 8,
+                    barThickness: 14
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { display: true, color: '#94a3b8', font: { size: 10 }, maxRotation: 45, minRotation: 45 } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, min: 40, ticks: { color: '#94a3b8', font: { size: 11 } } }
+                }
+            }
+        });
+    }
+
+    /* ========================================= */
+    /* === STRESS LOGIC === */
+    /* ========================================= */
+
+    const METRIC_INFO = {
+        "Emotional Stress": {
+            meaning: "Reflects emotional reactions such as anxiety, feeling overwhelmed, or emotional exhaustion.",
+            improve: "Practice mindfulness, journaling, deep breathing, and ensure adequate rest."
+        },
+        "Loss of Control": {
+            meaning: "Indicates how much control you feel over important aspects of your life.",
+            improve: "Break tasks into smaller steps, prioritize daily goals, and set realistic boundaries."
+        },
+        "Resilience Level": {
+            meaning: "Measures your ability to cope with stress and bounce back from challenges.",
+            improve: "Maintain social connections, regular physical activity, and consistent sleep routines."
+        },
+        "Cognitive Load": {
+            meaning: "Represents mental overload, difficulty concentrating, or too many demands at once.",
+            improve: "Reduce multitasking, schedule focused work blocks, and take regular mental breaks."
+        },
+        "Anger Reactivity": {
+            meaning: "Shows how often stress triggers frustration, irritation, or anger.",
+            improve: "Pause before reacting, practice slow breathing, and identify stress triggers early."
+        }
+    };
+
+    function renderMetric(label, value, max) {
+        const pct = value / max;
+        let color, severity;
+        if (pct > 0.7) { color = "#f87171"; severity = "High"; }
+        else if (pct > 0.4) { color = "#fbbf24"; severity = "Moderate"; }
+        else { color = "#4ade80"; severity = "Low"; }
+
+        return `
+        <div class="metric">
+            <div class="metric-header">
+                <span style="display:flex; align-items:center;">
+                    ${label}
+                    <span class="info-icon">ⓘ
+                        <span class="tooltip">
+                            <b style="color:var(--primary)">What it means</b><br>
+                            ${METRIC_INFO[label].meaning}<br><br>
+                            <b style="color:var(--primary)">How to improve</b><br>
+                            ${METRIC_INFO[label].improve}
+                        </span>
+                    </span>
+                </span>
+                <span style="display:flex;gap:10px;align-items:center;">
+                    <span style="color:${color}; font-weight:700;">${value}/${max}</span>
+                    <span style="font-size:11px; padding:2px 8px; border-radius:999px; background:${color}15; border: 1px solid ${color}40; color:${color}; font-weight:600; text-transform:uppercase;">
+                        ${severity}
+                    </span>
+                </span>
+            </div>
+            <div class="metric-bar">
+                <div class="metric-fill" data-width="${pct * 100}" style="background:${color}; box-shadow: 0 0 12px ${color}; width:0%"></div>
+            </div>
+        </div>`;
+    }
+
+    async function loadStress(memberId=null) {
+        let url = "/api/stress/latest";
+        if (memberId) url += `?member_id=${memberId}`;
+        
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            
+            const infoBox = document.getElementById("stressInfoBox");
+            const stressCard = document.getElementById("stressCard");
+
+            if (!data || typeof data.total_score === 'undefined' || data.total_score === null) {
+                infoBox.style.display = "block";
+                stressCard.style.display = "none";
+                return;
+            }
+
+            infoBox.style.display = "none";
+            stressCard.style.display = "block";
+
+            document.getElementById("stressScore").innerText = data.total_score;
+            document.getElementById("stressLevel").innerText = data.stress_level;
+            document.getElementById("stressInsightText").innerText = data.insight_past || "No insights available.";
+
+            if (data.measured_at) {
+                const dt = new Date(data.measured_at);
+                document.getElementById("stressMeasuredTime").innerText = "Measured on " + dt.toLocaleString();
+            }
+
+            const container = document.getElementById("stressMetricsContainer");
+            container.innerHTML = `
+            <div class="breakdown-card">
+              <div class="breakdown-title">📊 Stress Breakdown</div>
+              ${renderMetric("Emotional Stress", data.emotional || 0, 12)}
+              ${renderMetric("Loss of Control", data.control || 0, 12)}
+              ${renderMetric("Resilience Level", data.resilience || 0, 16)}
+              ${renderMetric("Cognitive Load", data.cognitive || 0, 8)}
+              ${renderMetric("Anger Reactivity", data.anger || 0, 8)}
+            </div>`;
+
+            setTimeout(() => {
+                document.querySelectorAll(".metric-fill").forEach(bar => {
+                    bar.style.width = bar.dataset.width + "%";
+                });
+            }, 100);
+
+            drawRadarChart(data);
+        } catch (err) {
+            console.error("Stress Load Error:", err);
+            document.getElementById("stressInfoBox").style.display = "block";
+            document.getElementById("stressCard").style.display = "none";
+        }
+    }
+
+    function drawRadarChart(data) {
+        const canvas = document.getElementById("stressRadar");
+        const ctx = canvas.getContext("2d");
+        const dpr = window.devicePixelRatio || 1;
+        let rect = canvas.getBoundingClientRect();
+        if(rect.width === 0) rect = { width: 320, height: 320 }; 
+
+        canvas.width = rect.width * dpr;
+        canvas.height = 320 * dpr;
+        ctx.scale(dpr, dpr);
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = '320px';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const cx = rect.width / 2;
+        const cy = 160;
+        const radius = 100; 
+        const labels = ["Emotional", "Control", "Resilience", "Cognitive", "Anger"];
+        const values = [data.emotional, data.control, data.resilience, data.cognitive, data.anger];
+        const angleStep = (2 * Math.PI) / labels.length;
+
+        ctx.strokeStyle = "rgba(255,255,255,0.1)";
+        ctx.lineWidth = 1;
+        for (let i = 1; i <= 5; i++) {
+            ctx.beginPath();
+            for (let j = 0; j < labels.length; j++) {
+                const angle = j * angleStep - Math.PI / 2;
+                const r = (radius / 5) * i;
+                const x = cx + r * Math.cos(angle);
+                const y = cy + r * Math.sin(angle);
+                j === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "600 11px Outfit, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        labels.forEach((label, i) => {
+            const angle = i * angleStep - Math.PI / 2;
+            const x = cx + (radius + 25) * Math.cos(angle);
+            const y = cy + (radius + 25) * Math.sin(angle);
+            ctx.fillText(label, x, y);
+        });
+
+        ctx.beginPath();
+        values.forEach((val, i) => {
+            const angle = i * angleStep - Math.PI / 2;
+            const maxValues = [12, 12, 16, 8, 8];
+            const r = (val / maxValues[i]) * radius;
+            const x = cx + r * Math.cos(angle);
+            const y = cy + r * Math.sin(angle);
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+
+        ctx.fillStyle = "rgba(255, 45, 85, 0.25)";
+        ctx.strokeStyle = "#ff2d55";
+        ctx.lineWidth = 3;
+        ctx.lineJoin = "round";
+        ctx.fill();
+        ctx.stroke();
+        
+        values.forEach((val, i) => {
+            const angle = i * angleStep - Math.PI / 2;
+            const maxValues = [12, 12, 16, 8, 8];
+            const r = (val / maxValues[i]) * radius;
+            const x = cx + r * Math.cos(angle);
+            const y = cy + r * Math.sin(angle);
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = "#fff";
+            ctx.fill();
+        });
+    }
+
+    /* --- Notifications Logic --- */
+    function toggleNotifications(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById("notificationDropdown");
+        const badge = document.getElementById("notifBadge");
+        if (dropdown.style.display === "block") {
+            dropdown.style.display = "none";
+        } else {
+            dropdown.style.display = "block";
+            if (badge) badge.style.display = "none";
+        }
+    }
+
+    document.addEventListener('click', function(event) {
+        const wrapper = document.querySelector('.header-controls');
+        const dropdown = document.getElementById("notificationDropdown");
+        if (wrapper && !wrapper.contains(event.target) && dropdown) {
+            dropdown.style.display = "none";
+        }
+    });
+
+    function clearNotifications(event) {
+        event.stopPropagation();
+        document.getElementById("notifList").innerHTML = `<div style="padding:20px; text-align:center; color:#94a3b8; font-size:12px;">No new notifications</div>`;
+    }
+
+    function generateNotifications(data) {
+        const list = document.getElementById("notifList");
+        const badge = document.getElementById("notifBadge");
+        list.innerHTML = "";
+        let notifCount = 0;
+
+        if (!data || data.length === 0) {
+            list.innerHTML = `<div style="padding:20px; text-align:center; color:#94a3b8; font-size:12px;">No recent data found.</div>`;
+            if(badge) badge.style.display = "none";
+            return;
+        }
+
+        const latest = data[data.length - 1]; 
+        if (!latest || typeof latest.bpm === 'undefined') return;
+
+        const bpm = latest.bpm;
+        const time = parseDateString(latest.time).time; 
+        let alertHtml = "";
+        
+        if (bpm > 100) {
+            notifCount++;
+            alertHtml += `
+            <div class="notif-item unread">
+                <div class="bell-icon" style="background: rgba(244, 63, 94, 0.2); width:32px; height:32px; font-size:16px;">❤️</div>
+                <div style="margin-left:12px;">
+                    <p style="margin:0; font-size:13px; font-weight:600; color:#f43f5e;">High Heart Rate</p>
+                    <p style="margin:2px 0 0; font-size:11px; color:#94a3b8;">${bpm} BPM at ${time}</p>
+                </div>
+            </div>`;
+        } else if (bpm < 60) {
+            notifCount++;
+            alertHtml += `
+            <div class="notif-item unread">
+                <div class="bell-icon" style="background: rgba(59, 130, 246, 0.2); width:32px; height:32px; font-size:16px;">💙</div>
+                <div style="margin-left:12px;">
+                    <p style="margin:0; font-size:13px; font-weight:600; color:#60a5fa;">Low Heart Rate</p>
+                    <p style="margin:2px 0 0; font-size:11px; color:#94a3b8;">${bpm} BPM at ${time}</p>
+                </div>
+            </div>`;
+        } else {
+            alertHtml += `
+            <div class="notif-item">
+                <div class="bell-icon" style="background: rgba(34, 197, 94, 0.2); width:32px; height:32px; font-size:16px;">✅</div>
+                <div style="margin-left:12px;">
+                    <p style="margin:0; font-size:13px; font-weight:600; color:#4ade80;">Normal Heart Rate</p>
+                    <p style="margin:2px 0 0; font-size:11px; color:#94a3b8;">Latest: ${bpm} BPM</p>
+                </div>
+            </div>`;
+        }
+
+        alertHtml += `
+        <div class="notif-item">
+            <div class="bell-icon" style="width:32px; height:32px; font-size:16px;">💧</div>
+            <div style="margin-left:12px;">
+                <p style="margin:0; font-size:13px; font-weight:600; color:#cbd5e1;">Daily Tip</p>
+                <p style="margin:2px 0 0; font-size:11px; color:#94a3b8;">Stay hydrated.</p>
+            </div>
+        </div>`;
+
+        list.innerHTML = alertHtml;
+        if (notifCount > 0) {
+            badge.style.display = "block";
+        } else {
+            badge.style.display = "none";
+        }
+    }
+
+    document.getElementById("btn-telehealth-tracker")?.addEventListener("click", () => {
+        window.location.href = "{{ url_for('telehealth') }}";
+    });
+
+</script>
+{% endblock %}

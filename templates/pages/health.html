@@ -1,0 +1,754 @@
+{% extends "layouts/base.html" %}
+
+{% block info_popup %}
+    <h3 style="color: #f43f5e; margin-top: 0;">❤️ Health Hub</h3>
+    <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.5;">
+        Select a tool to begin your check-up.
+    </p>
+    <ul style="color: #94a3b8; padding-left: 20px; font-size: 0.9rem;">
+        <li style="margin-bottom: 5px;"><strong>Heart Rate:</strong> Uses your camera flash.</li>
+        <li><strong>Eye Test:</strong> Interactive vision check.</li>
+    </ul>
+{% endblock %}
+
+{% block title %}Health Hub | HridyaCare{% endblock %}
+
+{% block head %}
+<style>
+    /* --- PAGE SPECIFIC STYLES --- */
+    
+    /* Glassmorphism Effect */
+    .glass-effect {
+        background: rgba(30, 41, 59, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Page Title */
+    .page-header { 
+        display: flex; justify-content: space-between; align-items: center; 
+        margin-bottom: 20px; padding: 0 4px;
+    }
+    .page-title { 
+        font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; color: #fff; 
+    }
+
+    /* ---------- MEDICATION ---------- */
+    .med-card {
+        display: flex; justify-content: space-between; align-items: center;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        border-radius: 20px; padding: 18px 20px; margin-bottom: 24px;
+        box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+        border: 1px solid rgba(255,255,255,0.1);
+        transition: transform 0.2s;
+    }
+    .med-card:active { transform: scale(0.98); }
+    .med-card h3 { margin: 0; font-size: 16px; color: white; font-weight: 700; }
+    .med-card button {
+        background: #fff; color: #1e40af; border: none; padding: 10px 20px;
+        border-radius: 999px; font-weight: 700; font-size: 13px; 
+        cursor: pointer; white-space: nowrap; transition: transform 0.2s;
+    }
+    .med-card button:active { transform: scale(0.95); }
+
+    /* ---------- ENERGY FORECAST ---------- */
+    .forecast-card {
+        background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);
+        padding: 24px 20px; border-radius: 24px; margin-bottom: 24px;
+        border: 1px solid rgba(59, 130, 246, 0.2); 
+        box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.6);
+        position: relative; overflow: hidden;
+    }
+    .forecast-card::before {
+        content: ''; position: absolute; top: -50px; right: -50px; width: 150px; height: 150px;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .forecast-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 45px; }
+    
+    .forecast-title { font-size: 18px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .forecast-sub { 
+        font-size: 10px; font-weight: 700; color: #60a5fa; 
+        background: rgba(59, 130, 246, 0.15); padding: 5px 10px; border-radius: 12px; letter-spacing: 0.5px; 
+    }
+
+    .energy-bar-container {
+        display: flex; justify-content: space-between; align-items: flex-end;
+        height: 110px; gap: 10px; position: relative; padding-bottom: 28px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .energy-bar-wrapper { flex: 1; height: 100%; display: flex; align-items: flex-end; position: relative; }
+    .energy-bar-fill {
+        width: 100%; border-radius: 8px 8px 4px 4px;
+        background: rgba(255,255,255,0.1);
+        transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+    }
+    .energy-bar-fill.animate-in { height: 0; }
+
+    .energy-bar-wrapper.active .energy-bar-fill {
+        background: linear-gradient(to top, #3b82f6, #93c5fd);
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        animation: activePulse 3s infinite ease-in-out;
+    }
+    @keyframes activePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } }
+
+    .bar-label {
+        position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%);
+        font-size: 11px; font-weight: 600; color: #64748b;
+    }
+    .energy-bar-wrapper.active .bar-label { color: #fff; }
+
+    .current-indicator {
+        position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+        background: #3b82f6; color: white; padding: 4px 8px; border-radius: 8px; 
+        font-size: 10px; font-weight: 800; letter-spacing: 0.5px;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4); z-index: 2;
+    }
+    .current-indicator::after {
+        content: ''; position: absolute; bottom: -4px; left: 50%; margin-left: -4px;
+        border-width: 4px 4px 0; border-style: solid; border-color: #3b82f6 transparent transparent;
+    }
+
+    /* ---------- INFO ICON ---------- */
+    .info-icon {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 18px; height: 18px; font-size: 11px; font-weight: bold;
+        border-radius: 50%; background: rgba(255,255,255,0.1); color: #cbd5e1;
+        cursor: help; border: 1px solid rgba(255,255,255,0.2);
+    }
+    .tooltip {
+        position: absolute; top: 30px; right: 0; 
+        background: #1e293b; color: #f1f5f9; padding: 14px; border-radius: 12px;
+        font-size: 12px; line-height: 1.5; width: 200px; opacity: 0; pointer-events: none;
+        transition: all 0.2s; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        border: 1px solid rgba(255,255,255,0.1); z-index: 100; text-align: left;
+    }
+    .info-icon:hover .tooltip { opacity: 1; pointer-events: auto; }
+
+    /* ---------- INSTANT CALM ---------- */
+    .breathe-card {
+        background: radial-gradient(circle at center, #5b21b6 0%, #2e1065 100%);
+        border-radius: 24px;
+        padding: 25px 20px;
+        margin-bottom: 24px;
+        text-align: center;
+        overflow: hidden;
+        position: relative;
+        cursor: pointer;
+        border: 1px solid rgba(167, 139, 250, 0.2);
+        box-shadow: 0 10px 30px -10px rgba(46, 16, 101, 0.7);
+        transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+    }
+
+    .breathe-header h3 { margin:0; font-size:18px; color:#fff; font-weight: 700; }
+    .breathe-header p { margin:6px 0 0 0; font-size:13px; color:#ddd6fe; opacity: 0.8; }
+
+    .breathing-apparatus {
+        position: relative;
+        width: 100px; height: 100px;
+        margin: 50px auto 30px auto; 
+        display: flex; align-items: center; justify-content: center;
+    }
+
+    .center-icon {
+        font-size: 32px; z-index: 5; relative; transition: transform 0.3s ease;
+    }
+    .breathe-card:active .center-icon { transform: scale(0.9); }
+
+    .ring {
+        position: absolute;
+        border-radius: 50%;
+        border: 2px solid rgba(255,255,255,0.1);
+        box-shadow: 0 0 15px rgba(167, 139, 250, 0.1), inset 0 0 15px rgba(167, 139, 250, 0.1);
+        transition: all 0.5s ease-out;
+    }
+
+    .ring-1 { width: 100%; height: 100%; }
+    .ring-2 { width: 70%; height: 70%; opacity: 0.7; }
+    .ring-3 { width: 40%; height: 40%; opacity: 0.5; background: rgba(255,255,255,0.05); }
+
+    .breathe-card.active .ring-1 { animation: breatheAnim 4s infinite cubic-bezier(0.45, 0, 0.55, 1); }
+    .breathe-card.active .ring-2 { animation: breatheAnim 4s infinite cubic-bezier(0.45, 0, 0.55, 1) 0.2s; }
+    .breathe-card.active .ring-3 { animation: breatheAnim 4s infinite cubic-bezier(0.45, 0, 0.55, 1) 0.4s; }
+
+    @keyframes breatheAnim {
+        0%, 100% { transform: scale(1); opacity: 0.3; border-color: rgba(255,255,255,0.1); }
+        50% { 
+            transform: scale(1.5); 
+            opacity: 1; 
+            border-color: rgba(167, 139, 250, 0.8);
+            box-shadow: 0 0 30px rgba(167, 139, 250, 0.6), inset 0 0 20px rgba(167, 139, 250, 0.4);
+            background: rgba(167, 139, 250, 0.1);
+        }
+    }
+
+    .breathe-text-container { min-height: 24px; }
+    .breathe-text { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: 0.5px; transition: all 0.3s; }
+    .breathe-card:not(.active) .breathe-text { color: #a78bfa; font-weight: 500; }
+
+    /* Focus Mode Overlay */
+    body.focus-mode-active::after {
+        content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(5, 10, 20, 0.85); z-index: 2000; backdrop-filter: blur(4px);
+        opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+    }
+    body.focus-mode-active::after { opacity: 1; pointer-events: all; }
+    
+    body.focus-mode-active .breathe-card { 
+        z-index: 2001; transform: scale(1.05); 
+        box-shadow: 0 0 60px rgba(139, 92, 246, 0.3), inset 0 0 20px rgba(139, 92, 246, 0.1);
+        border-color: rgba(167, 139, 250, 0.6);
+    }
+
+    /* ---------- NEW FEATURE: BIO-HAPTIC RESONANCE ---------- */
+    .haptic-card {
+        background: linear-gradient(135deg, #be123c, #881337);
+        padding: 24px 20px; border-radius: 24px; margin-bottom: 24px;
+        position: relative; overflow: hidden; user-select: none;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: transform 0.1s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+    
+    .haptic-card:active { transform: scale(0.97); }
+    
+    .haptic-icon-area {
+        width: 60px; height: 60px; border-radius: 50%;
+        background: rgba(255,255,255,0.1); margin: 0 auto 15px auto;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 24px; border: 1px solid rgba(255,255,255,0.2);
+        transition: all 0.2s;
+    }
+    
+    /* Animation class applied via JS */
+    .haptic-card.active .haptic-icon-area {
+        background: #f43f5e;
+        box-shadow: 0 0 20px #f43f5e;
+        transform: scale(1.1);
+    }
+
+    .haptic-pulse {
+        animation: hapticPulseAnim 1s infinite;
+        display: none;
+    }
+    .haptic-card.active .haptic-pulse { display: block; }
+    
+    @keyframes hapticPulseAnim {
+        0% { transform: scale(1); opacity: 0.8; }
+        100% { transform: scale(2.2); opacity: 0; }
+    }
+
+    /* ---------- HORIZONTAL SCROLL ---------- */
+    .h-scroll { display: flex; gap: 14px; overflow-x: auto; padding: 10px 4px 20px 4px; }
+    .h-scroll::-webkit-scrollbar { display: none; }
+    
+    .topic-card {
+        min-width: 140px; height: 110px; border-radius: 16px; overflow: hidden; 
+        position: relative; flex-shrink: 0; cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);
+    }
+    .topic-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0.7; transition: 0.3s; }
+    .topic-card:active img { transform: scale(1.05); }
+    .topic-card .card-content {
+        position: absolute; bottom: 0; width: 100%; padding: 10px;
+        background: linear-gradient(to top, rgba(15,23,42,0.95), transparent);
+    }
+    .topic-card h3 { margin: 0; font-size: 13px; color: white; font-weight: 700; }
+    .topic-card p { margin: 2px 0 0; font-size: 10px; color: #cbd5e1; }
+
+    .article-card {
+        min-width: 240px; height: 150px; border-radius: 16px; position: relative; overflow: hidden; flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);
+    }
+    .article-overlay {
+        position: absolute; bottom: 0; width: 100%; padding: 14px;
+        background: linear-gradient(to top, #0f172a, transparent);
+    }
+    .article-card h4 { margin: 0; font-size: 15px; color: white; font-weight: 700; }
+    .article-card small { color: #60a5fa; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* ---------- QUIZ (RESTORED) ---------- */
+    .quiz { 
+        text-align: center; 
+        background: #1e293b; 
+        padding: 20px 20px 15px 20px; 
+        border-radius: 24px; 
+        margin-bottom: 24px; 
+        border: 1px solid rgba(255,255,255,0.05); 
+    }
+    .quiz h4 { color: #60a5fa; margin: 0 0 10px 0; font-size: 16px; }
+    .quiz .btns { display: flex; gap: 12px; margin-top: 15px; }
+    .quiz button { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
+    .quiz button:active { transform: scale(0.98); }
+    .true { background: #3b82f6; color: white; }
+    .false { background: #f43f5e; color: white; }
+
+    /* ---------- HABITS ---------- */
+    .sleep { display: flex; gap: 12px; justify-content: space-between; margin-top: 15px; }
+    .sleep div {
+        flex: 1; height: 70px; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        font-size: 11px; color: #cbd5e1; font-weight: 500;
+    }
+    .sleep div span { font-size: 22px; margin-bottom: 4px; }
+
+    /* ---------- CONSENT MODAL (NEW STYLES) ---------- */
+    .consent-modal {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.85); /* Matches dark theme */
+        backdrop-filter: blur(8px);
+        display: none; align-items: center; justify-content: center;
+        z-index: 9999; animation: fadeIn 0.3s ease;
+    }
+    
+    .consent-box {
+        background: linear-gradient(145deg, #1e293b, #0f172a);
+        padding: 24px; border-radius: 24px; max-width: 320px; width: 90%;
+        text-align: center;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+    
+    .consent-icon { font-size: 32px; margin-bottom: 12px; display: block; }
+    
+    .consent-box h3 {
+        color: #fff; margin: 0 0 10px 0; font-size: 18px; font-weight: 700;
+    }
+    
+    .consent-box p {
+        color: #cbd5e1; font-size: 14px; line-height: 1.6; margin-bottom: 20px;
+    }
+    
+    .consent-actions { display: flex; gap: 12px; }
+    
+    .btn-agree {
+        flex: 1; background: #be123c; color: white; border: none; padding: 12px;
+        border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px;
+        transition: 0.2s;
+    }
+    .btn-agree:active { background: #9f1239; transform: scale(0.98); }
+    
+    .btn-cancel {
+        flex: 1; background: rgba(255,255,255,0.1); color: #cbd5e1; border: none; padding: 12px;
+        border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 14px;
+    }
+    
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+    <div class="page-header">
+        <div class="page-title">Health Hub</div>
+        <div id="liveClock" style="font-size:13px; color:#94a3b8; font-weight:600; background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:8px;">--:--</div>
+    </div>
+
+    <div class="med-card">
+        <div>
+            <h3 id="medTitle">Medication Reminder</h3>
+            <small id="medSub" style="color:#bfdbfe; font-size:12px; opacity:0.9;">Stay consistent for better health.</small>
+        </div>
+        <button onclick="location.href='{{ url_for('add_plan') }}'">Add Plan</button>
+    </div>
+
+    <div class="forecast-card">
+        <div class="forecast-header">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <div class="forecast-title">
+                    ⚡ Energy Forecast
+                    <span class="info-icon">i
+                        <span class="tooltip">
+                            <strong style="color:#60a5fa">Circadian Rhythm</strong><br>
+                            Your energy naturally fluctuates over 24 hours. We highlight the current phase to help you schedule tasks.
+                        </span>
+                    </span>
+                </div>
+                <div style="font-size:12px; color:#94a3b8;">Based on your biological clock</div>
+            </div>
+            <div class="forecast-sub">LIVE</div>
+        </div>
+        
+        <div class="energy-bar-container" id="energyContainer">
+            <div class="energy-bar-wrapper" id="bar-8">
+                <div class="energy-bar-fill" style="height: 60%;"></div>
+                <span class="bar-label">8am</span>
+            </div>
+            <div class="energy-bar-wrapper" id="bar-12">
+                 <div class="energy-bar-fill" style="height: 95%;"></div>
+                <span class="bar-label">12pm</span>
+            </div>
+            <div class="energy-bar-wrapper" id="bar-16">
+                <div class="energy-bar-fill" style="height: 50%;"></div>
+                <span class="bar-label">4pm</span>
+            </div>
+            <div class="energy-bar-wrapper" id="bar-20">
+                <div class="energy-bar-fill" style="height: 30%;"></div>
+                <span class="bar-label">8pm</span>
+            </div>
+            <div class="energy-bar-wrapper" id="bar-0">
+                <div class="energy-bar-fill" style="height: 15%; background:rgba(255,255,255,0.1)"></div>
+                <span class="bar-label">12am</span>
+            </div>
+        </div>
+        
+        <div style="background:rgba(59, 130, 246, 0.1); padding:14px; border-radius:12px; margin-top:25px; display:flex; gap:12px; align-items:start; border:1px solid rgba(59,130,246,0.15);">
+            <span style="font-size:18px">💡</span>
+            <p style="font-size:13px; color:#cbd5e1; margin:0; line-height:1.5;" id="energyTip">
+                Loading forecast...
+            </p>
+        </div>
+    </div>
+
+    <div class="card glass-effect" onclick="openAIRead()" style="cursor:pointer; padding:18px; border-radius:20px; margin-bottom:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+           <strong style="color:white; font-size:15px; display:block; margin-bottom:4px;">📘 Recommended Read</strong>
+           <p style="color:#94a3b8; font-size:13px; margin:0;" id="ai-read-text">
+              Loading...
+           </p>
+        </div>
+        <span style="font-size:20px; color:#64748b">→</span>
+      </div>
+    </div>
+
+    <div class="breathe-card" id="breatheCard" onclick="toggleBreathing()">
+        <div class="breathe-header">
+            <h3>Instant Calm</h3>
+            <p>Feeling overwhelmed? Tap to re-center.</p>
+        </div>
+        
+        <div class="breathing-apparatus">
+            <div class="ring ring-1"></div>
+            <div class="ring ring-2"></div>
+            <div class="ring ring-3"></div>
+            <div class="center-icon">🧘</div>
+        </div>
+        
+        <div class="breathe-text-container">
+            <div class="breathe-text" id="breatheText">Tap to start guided breathing</div>
+        </div>
+    </div>
+
+    <div class="haptic-card" id="hapticCard">
+        <div style="text-align:center; pointer-events: none;"> <div class="haptic-icon-area" id="hapticIcon">
+                <span style="color:white;">❤️</span>
+                <div class="ring haptic-pulse"></div>
+            </div>
+            <h3 style="color:white; font-size:16px; margin:0 0 5px 0; font-weight:700;">Bio-Haptic Resonance</h3>
+            <p style="color:#fda4af; font-size:12px; margin:0; line-height:1.4;">
+                <strong>Press & Hold</strong> here to feel the rhythm. We'll pulse at exactly 60 BPM to help slow your heart rate.
+            </p>
+            <small class="glass-effect" style="padding:4px 8px; border-radius:6px; font-size:10px; display:inline-block; margin-top:8px;">
+                Research Feature • Press & Hold
+            </small>
+        </div>
+    </div>
+
+    <div style="margin-bottom:24px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px; align-items:center;">
+            <strong style="color:white; font-size:16px;">Health Topics</strong>
+            <a href="{{ url_for('all_topics') }}" style="color:#3b82f6; font-size:13px; text-decoration:none; font-weight:600;">View All</a>
+        </div>
+        <div class="h-scroll">
+            <div class="topic-card" onclick="location.href='{{ url_for('heart_health_hub') }}'">
+               <img src="https://images.unsplash.com/photo-1486218119243-13883505764c?auto=format&fit=crop&w=400&q=80" alt="Heart">
+               <div class="card-content"><h3>Heart Rate</h3><p>View Data</p></div>
+            </div>
+            <div class="topic-card" onclick="location.href='/article/heart-disease'">
+               <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=400&q=80" alt="Disease">
+               <div class="card-content"><h3>Heart Disease</h3><p>Risk Factors</p></div>
+            </div>
+            <div class="topic-card" onclick="location.href='/article/stress-connection'">
+               <img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=400&q=80" alt="Stress">
+               <div class="card-content"><h3>Stress</h3><p>Management</p></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="quiz" id="stressQuiz">
+        <h4 id="quizTitle">🧠 Quick Knowledge Check</h4>
+        <p id="quizQuestion" style="font-size:15px; color:#cbd5e1; margin-bottom:18px; height: 60px; display: flex; align-items: center; justify-content: center;">Loading...</p>    
+        <div class="btns">
+            <button class="true" onclick="answer(true)">TRUE</button>
+            <button class="false" onclick="answer(false)">FALSE</button>
+        </div>
+    </div>
+
+    <div class="card glass-effect" style="padding:18px; border-radius:24px; margin-bottom:24px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+            <strong style="color:white; font-size:16px;">Diet & Nutrition</strong>
+            <span style="color:#94a3b8;font-size:12px; font-weight:600;">PERSONALIZED</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.05); padding:14px; border-radius:14px; margin-bottom:16px;">
+            <small style="color:#60a5fa; font-size:10px; font-weight:700;">BASED ON YOUR HEART RATE</small>
+            <p style="margin:6px 0 0 0; font-size:14px; line-height:1.5; color:#f1f5f9;" id="diet-text">Analyzing...</p>
+        </div>
+        <div class="h-scroll">
+            <div class="topic-card" onclick="location.href='diet-low-salt.html'">
+               <img src="https://images.unsplash.com/photo-1615486511484-92e172cc4fe0?auto=format&fit=crop&w=400&q=80" class="card-bg">
+               <div class="card-content"><h3>Low-Salt</h3><p>BP Control</p></div>
+            </div>
+            <div class="topic-card" onclick="location.href='diet-high-protein.html'">
+               <img src="https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=400&q=80" class="card-bg">
+               <div class="card-content"><h3>High Protein</h3><p>Repair</p></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card glass-effect" style="padding:18px; border-radius:24px;">
+        <strong style="color:white; font-size:16px;">Daily Habits</strong>
+        <div class="sleep">
+            <div><span>💧</span>Hydrate</div>
+            <div><span>🚶</span>Walk</div>
+            <div><span>🧘</span>Breathe</div>
+            <div><span>😴</span>Sleep</div>
+        </div>
+    </div>
+
+    <div id="hapticConsentModal" class="consent-modal">
+        <div class="consent-box">
+            <span class="consent-icon">⚡</span>
+            <h3>Enable Bio-Haptics?</h3>
+            <p>
+                We use your phone's vibration motor to simulate a calming 60 BPM heartbeat.
+                <br><br>
+                <em>Note: This is an experimental relaxation feature, not a medical tool.</em>
+            </p>
+            <div class="consent-actions">
+                <button onclick="acceptHapticConsent()" class="btn-agree">Enable</button>
+                <button onclick="closeHapticConsent()" class="btn-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // =====================================================
+    // 1. CRITICAL FIX: RESTORE FOOTER ICONS & GRADIENT
+    // =====================================================
+    lucide.createIcons();
+    const navIcons = document.querySelectorAll(".bottom-nav svg");
+    navIcons.forEach((svg) => {
+        const shapes = svg.querySelectorAll('path, circle, line, polyline, rect');
+        shapes.forEach(shape => {
+            shape.setAttribute("stroke", "url(#hridyaGradient)");
+        });
+    });
+
+    // =====================================================
+    // 2. EXISTING HEALTH HUB LOGIC
+    // =====================================================
+    fetch("/api/last-health-summary").then(res => res.json()).then(summary => {
+        const bpm = summary.exists ? summary.bpm : 75; 
+        return fetch(`/api/diet?bpm=${bpm}`);
+    }).then(res => res.json()).then(data => {
+        const el = document.getElementById("diet-text");
+        el.innerHTML = `<strong>${data.recommendation}</strong>`;
+        if(data.bpm > 90) el.innerHTML += `<br><span style="color:#f43f5e; font-size:11px; margin-top:4px; display:block;">(Elevated HR detected)</span>`;
+    }).catch(err => {
+        const el = document.getElementById("diet-text");
+        el.innerHTML = "Balanced diet recommended. Focus on <strong>hydration and whole grains</strong>.";
+    });
+
+    fetch("/api/ai-read").then(res => res.json()).then(data => {
+        document.getElementById("ai-read-text").innerText = data.article.title;
+        window.aiArticleSlug = data.slug;
+    }).catch(() => {
+        document.getElementById("ai-read-text").innerText = "Circadian Rhythms & Heart Health";
+    });
+
+    // INIT HAPTIC FEATURE
+    initHapticFeature();
+});
+
+function openAIRead(){ 
+    if(window.aiArticleSlug) window.location.href = `/article/${window.aiArticleSlug}`; 
+    else window.location.href = "/all-articles"; 
+}
+
+// --- Live Engine (CORRECTED 24H LOGIC) ---
+(function liveEngine() {
+    const liveClock = document.getElementById('liveClock');
+    const medTitle = document.getElementById('medTitle');
+    const medSub = document.getElementById('medSub');
+    const energyTip = document.getElementById('energyTip');
+
+    function updateLive() {
+        const now = new Date();
+        const hour = now.getHours();
+        
+        liveClock.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        let greeting = "Hello!";
+        if(hour < 12) greeting = "Good Morning";
+        else if(hour < 18) greeting = "Good Afternoon";
+        else greeting = "Good Evening";
+        
+        if(medTitle.innerText.includes("Medication") || medTitle.innerText.includes("Good")) {
+            medTitle.innerText = greeting;
+        }
+
+        document.querySelectorAll('.energy-bar-wrapper').forEach(b => {
+            b.classList.remove('active');
+            const ind = b.querySelector('.current-indicator');
+            if(ind) ind.remove();
+        });
+
+        let activeId = 'bar-8';
+        let msg = "Morning Spike: Cortisol is rising. Great time for deep work.";
+
+        if (hour >= 0 && hour < 6) { activeId = 'bar-0'; msg = "Recharge Mode: Your body needs sleep for recovery now."; } 
+        else if (hour >= 6 && hour < 10) { activeId = 'bar-8'; msg = "Morning Rise: Best time for planning and analytical tasks."; } 
+        else if (hour >= 10 && hour < 14) { activeId = 'bar-12'; msg = "Peak Focus: Tackle your hardest task before the post-lunch dip."; } 
+        else if (hour >= 14 && hour < 18) { activeId = 'bar-16'; msg = "Afternoon: Energy might dip. Good for meetings or a walk."; } 
+        else if (hour >= 18 && hour < 22) { activeId = 'bar-20'; msg = "Winding Down: Avoid blue light. Good for light reading."; } 
+        else { activeId = 'bar-0'; msg = "Sleep Time: Prepare for rest."; }
+
+        const activeEl = document.getElementById(activeId);
+        if(activeEl) {
+            activeEl.classList.add('active');
+            const ind = document.createElement('div');
+            ind.className = 'current-indicator';
+            ind.innerText = "NOW";
+            activeEl.appendChild(ind);
+            energyTip.innerHTML = msg;
+        }
+    }
+    updateLive();
+    setInterval(updateLive, 60000);
+})();
+
+// --- Quiz ---
+const questions = [
+    { text: "Chronic stress increases heart disease risk.", correct: true }, 
+    { text: "A resting HR of 120 is considered normal.", correct: false }, 
+    { text: "Nuts and seeds are bad for your heart.", correct: false }, 
+    { text: "Sleep deprivation affects heart recovery.", correct: true }, 
+    { text: "Deep breathing lowers blood pressure immediately.", correct: true }
+];
+let current = 0, score = 0;
+const qText = document.getElementById("quizQuestion");
+const quizCard = document.getElementById("stressQuiz");
+const titleEl = document.getElementById("quizTitle"); 
+function loadQuestion() { 
+    titleEl.innerText = "🧠 Quick Knowledge Check";
+    titleEl.style.color = "#60a5fa"; 
+    qText.innerText = questions[current].text; 
+}
+function answer(userChoice) {
+    const correct = questions[current].correct;
+    if (userChoice === correct) { 
+        score++; titleEl.innerText = "✅ Correct!"; titleEl.style.color = "#22c55e"; 
+    } else { 
+        titleEl.innerText = "❌ Incorrect"; titleEl.style.color = "#f43f5e"; 
+    }
+    setTimeout(() => { 
+        current++; 
+        if (current < questions.length) loadQuestion(); 
+        else showResult();
+    }, 1000);
+}
+function showResult() {
+  quizCard.innerHTML = `
+    <h4 style="color:#22c55e">🎉 Quiz Complete!</h4>
+    <p style="font-size:18px; margin-top:15px; color:white;">Score: <strong>${score} / ${questions.length}</strong></p>
+    <button onclick="location.reload()" style="background:#334155; color:white; border:none; padding:10px 20px; border-radius:10px; margin-top:10px; cursor:pointer;">Restart</button>
+  `;
+}
+loadQuestion();
+
+// --- Breathing ---
+let isBreathing = false;
+function toggleBreathing() {
+    const card = document.getElementById('breatheCard');
+    const text = document.getElementById('breatheText');
+    isBreathing = !isBreathing;
+    if (isBreathing) {
+        card.classList.add('active');
+        document.body.classList.add('focus-mode-active');
+        text.innerText = "Inhale... Exhale...";
+        if (navigator.vibrate) navigator.vibrate(50);
+    } else {
+        card.classList.remove('active');
+        document.body.classList.remove('focus-mode-active');
+        text.innerText = "Tap to start guided breathing";
+    }
+}
+
+// --- DYNAMIC HAPTIC ENGINE (PRESS & HOLD) ---
+let hapticAllowed = false;
+let hapticInterval = null;
+const card = document.getElementById("hapticCard");
+
+function initHapticFeature() {
+    // 1. Mouse/Touch Down starts interaction
+    card.addEventListener("mousedown", handlePressStart);
+    card.addEventListener("touchstart", handlePressStart, {passive: false});
+
+    // 2. Mouse/Touch Up ends interaction
+    card.addEventListener("mouseup", handlePressEnd);
+    card.addEventListener("mouseleave", handlePressEnd);
+    card.addEventListener("touchend", handlePressEnd);
+}
+
+function handlePressStart(e) {
+    e.preventDefault(); // Stop default press behavior
+    if (!hapticAllowed) {
+        document.getElementById("hapticConsentModal").style.display = "flex";
+    } else {
+        startHaptics();
+    }
+}
+
+function handlePressEnd(e) {
+    if(hapticAllowed) {
+        stopHaptics();
+    }
+}
+
+// Consent Actions
+function acceptHapticConsent() {
+    hapticAllowed = true;
+    document.getElementById("hapticConsentModal").style.display = "none";
+    // User must press again to start, we don't auto-start on consent for safety
+}
+
+function closeHapticConsent() {
+    document.getElementById("hapticConsentModal").style.display = "none";
+}
+
+// Haptic Loop
+function startHaptics() {
+    if (!navigator.vibrate) return;
+    
+    card.classList.add("active");
+    
+    // Immediate first beat
+    navigator.vibrate([70]); 
+    
+    // Loop for 60 BPM (1 beat per second)
+    // Clear any existing interval first to be safe
+    if(hapticInterval) clearInterval(hapticInterval);
+    
+    hapticInterval = setInterval(() => {
+        navigator.vibrate([70]); // Short, crisp beat
+    }, 1000);
+}
+
+function stopHaptics() {
+    card.classList.remove("active");
+    if(hapticInterval) {
+        clearInterval(hapticInterval);
+        hapticInterval = null;
+    }
+    navigator.vibrate(0); // Kill vibration immediately
+}
+</script>
+{% endblock %}

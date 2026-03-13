@@ -1,0 +1,1121 @@
+{% extends "layouts/base.html" %}
+
+{% block info_popup %}
+    <h3 style="color: #f43f5e; margin-top: 0;">👤 Profile & Family</h3>
+    <p style="color: #cbd5e1; font-size: 0.9rem;">
+        Manage medical details for yourself and your family members.
+    </p>
+    <hr style="border-color: rgba(255,255,255,0.1);">
+    <p style="color: #94a3b8; font-size: 0.85rem;">
+        Select a profile in the Medical ID card to view or edit specific data.
+    </p>
+{% endblock %}
+
+{% block title %}Profile | HridyaCare{% endblock %}
+
+{% block head %}
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+<style>
+    /* --- GLOBAL & ANIMATIONS --- */
+    .app-header a[href*="profile"] { display: none !important; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .animate-entry { animation: fadeIn 0.4s ease-out forwards; opacity: 0; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+
+    .page-header { 
+        display: flex; justify-content: center; align-items: center; 
+        margin-bottom: 20px; 
+    }
+    .page-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: #fff; }
+
+    /* --- 1. PROFILE CARD --- */
+    .profile-card {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border-radius: 24px; padding: 30px 20px; text-align: center;
+        margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.05);
+        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.4); 
+        position: relative; overflow: visible; /* Changed to visible for the badge */
+    }
+    .profile-card::before {
+        content: ''; position: absolute; top: -50%; left: 50%; transform: translateX(-50%);
+        width: 200px; height: 200px; background: #3b82f6; opacity: 0.08;
+        filter: blur(60px); border-radius: 50%; pointer-events: none;
+    }
+    
+    /* Avatar Container */
+    .avatar-container { 
+        position: relative; margin: 0 auto 15px; 
+        width: 100px; height: 100px; 
+        cursor: pointer; transition: transform 0.2s;
+    }
+    .avatar-container:active { transform: scale(0.95); }
+    .avatar-container:hover .avatar-edit-badge { transform: scale(1.1); }
+
+    .avatar-img {
+        width: 100%; height: 100%; border-radius: 50%; 
+        object-fit: cover; 
+        border: 2px solid rgba(255,255,255,0.2);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        background: #1e293b; display: block;
+    }
+
+    /* Pencil Badge */
+    .avatar-edit-badge {
+        position: absolute; bottom: 0; right: 0;
+        width: 32px; height: 32px;
+        background: #f43f5e; color: white;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-size: 16px; border: 3px solid #1e293b;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10;
+        transition: transform 0.2s;
+    }
+
+    .profile-name { font-size: 22px; font-weight: 700; margin: 0 0 5px; color: #f1f5f9; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+    .profile-email { font-size: 13px; color: #94a3b8; margin: 0; font-weight: 500; }
+
+    /* --- 2. MEDICAL ID CARD --- */
+    .medical-id-card {
+        background: linear-gradient(135deg, #4c0519 0%, #881337 100%);
+        position: relative; border-radius: 24px; padding: 24px;
+        margin-bottom: 24px; color: #f1f5f9;
+        box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.5); 
+        border: 1px solid rgba(255,255,255,0.05); overflow: hidden;
+    }
+    .mid-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: relative; z-index: 2; }
+    
+/* Fix for Vertical Centering in the Selector */
+    .mid-selector-wrapper {
+        position: relative;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 30px;
+        padding: 0 16px 0 40px; /* Reduced vertical padding */
+        border: 1px solid rgba(255,255,255,0.05);
+        display: flex;
+        align-items: center; /* Centers items vertically */
+        height: 42px; /* Fixed height ensures perfect centering */
+    }
+
+    .mid-header-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%); /* Mathematical vertical center */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .mid-header-icon svg {
+        width: 18px; /* Slightly smaller for a cleaner look */
+        height: 18px;
+    }
+
+    /* Making the Edit Button Smaller */
+    .mid-edit-btn {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.1);
+        width: 32px;  /* Reduced from 42px */
+        height: 32px; /* Reduced from 42px */
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .mid-edit-btn svg {
+        width: 14px; /* Scaled down the icon inside */
+        height: 14px;
+    }
+    .mid-selector {
+        background: transparent; border: none; color: #e2e8f0;
+        font-size: 16px; font-weight: 600; cursor: pointer;
+        appearance: none; -webkit-appearance: none; outline: none;
+        width: 100%; min-width: 140px;
+    }
+    .mid-selector option { background: #1e293b; color: white; }
+    
+    .mid-edit-btn {
+        background: rgba(255, 255, 255, 0.1); color: #fff;
+        border: 1px solid rgba(255,255,255,0.1); width: 42px; height: 42px;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        cursor: pointer; font-size: 18px; transition: all 0.2s;
+    }
+    .mid-edit-btn:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.05); }
+
+    .mid-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; position: relative; z-index: 2; }
+    
+    .mid-item {
+        background: rgba(0, 0, 0, 0.2); padding: 14px 16px; border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.03); display: flex; flex-direction: column;
+    }
+    .mid-meta {
+        display: flex; align-items: center; margin-bottom: 6px;
+        color: #fda4af; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+    }
+    .mid-icon { margin-right: 6px; font-size: 14px; opacity: 0.9; }
+    .mid-value { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; color: #fff; }
+    .mid-value.empty { opacity: 0.4; font-size: 14px; font-weight: 400; font-style: italic; }
+    
+    .mid-item.highlight {
+        background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.1); grid-column: span 2;
+    }
+    .mid-item.highlight .mid-value { font-size: 24px; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    .mid-item.highlight .mid-meta { color: #fecdd3; }
+
+    /* --- 3. SETTINGS & LOGOUT --- */
+    .settings-group {
+        background: rgba(30, 41, 59, 0.6);
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        border-radius: 20px; overflow: hidden; margin-bottom: 24px;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    .setting-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.05);
+        cursor: pointer; transition: background 0.2s; font-size: 15px; color: #e2e8f0;
+    }
+    .setting-item:last-child { border-bottom: none; }
+    .setting-item:hover { background: rgba(255,255,255,0.05); }
+    
+/* Modern Icon Container */
+    .setting-icon {
+        margin-right: 15px;
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Hover State for the Row */
+    .setting-item:hover .setting-icon {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05);
+    }
+
+    .setting-icon svg {
+        width: 20px;
+        height: 20px;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    /* Icon Specific Colors */
+    .icon-green { stroke: #10b981; filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.3)); }
+    .icon-purple { stroke: #a855f7; filter: drop-shadow(0 0 5px rgba(168, 85, 247, 0.3)); }
+    /* Color specifically for the 'Heart' and 'Premium' items */
+    .icon-red { stroke: #f43f5e; filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.4)); }
+    .icon-blue { stroke: #3b82f6; }
+    .icon-slate { stroke: #94a3b8; }    .arrow { color: #64748b; font-size: 18px; }
+/* Icon color for Feedback */
+    .icon-amber { 
+        stroke: #f59e0b; 
+        filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.3)); 
+    }
+
+    .logout-btn {
+        width: 100%; 
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(185, 28, 28, 0.2));
+        color: #fca5a5;
+        padding: 18px; border-radius: 16px; font-weight: 700; font-size: 15px;
+        border: 1px solid rgba(239, 68, 68, 0.2); 
+        cursor: pointer; transition: 0.2s; backdrop-filter: blur(4px);
+    }
+    .logout-btn:active { transform: scale(0.98); background: rgba(239, 68, 68, 0.2); }
+
+    /* --- 4. MODAL --- */
+    .gender-modal {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+        display: none; align-items: flex-end; z-index: 2000;
+        backdrop-filter: blur(6px);
+    }
+    .gender-card {
+        background: #1e293b; width: 100%; padding: 30px 24px 40px 24px;
+        border-radius: 30px 30px 0 0; border-top: 1px solid rgba(255,255,255,0.1);
+        animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        max-height: 85vh; overflow-y: auto;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    
+    .gender-card h4 { margin: 0 0 24px; font-size: 20px; color: white; text-align: center; font-weight: 700; }
+    .gender-card label {
+        font-size: 12px; color: #94a3b8; margin-bottom: 8px; display: block; 
+        font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    
+    .gender-card select, .gender-card input {
+        width: 100%; padding: 16px; border-radius: 16px;
+        background: rgba(0,0,0,0.3); color: white; 
+        border: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 16px; font-size: 16px; outline: none; appearance: none;
+    }
+    .gender-card select:focus, .gender-card input:focus {
+        border-color: var(--primary); background: rgba(0,0,0,0.5);
+    }
+
+    .modal-btn {
+        width: 100%; padding: 18px; border: none; border-radius: 16px;
+        font-weight: 700; font-size: 16px; cursor: pointer; margin-bottom: 10px;
+    }
+    .save-btn { background: var(--primary); color: white; margin-top: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    .cancel-btn { background: transparent; color: #94a3b8; }
+
+    /* --- City Auto-Complete --- */
+    .city-input-wrapper { position: relative; }
+    .suggestions-list {
+        position: absolute; bottom: 100%; left: 0; width: 100%;
+        background: #334155; border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px 16px 0 0; max-height: 150px; overflow-y: auto;
+        z-index: 50; list-style: none; padding: 0; margin: 0; display: none;
+        box-shadow: 0 -10px 25px rgba(0,0,0,0.5); margin-bottom: 5px;
+    }
+    .suggestions-list li {
+        padding: 14px 16px; font-size: 14px; color: #e2e8f0; cursor: pointer;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .suggestions-list li:hover { background: var(--primary); color: white; }
+
+    @media (max-width: 360px) {
+        .mid-grid { grid-template-columns: 1fr; }
+        .mid-item.highlight { grid-column: span 1; }
+    }
+    /* --- CROP MODAL STYLES --- */
+    .crop-modal {
+        position: fixed; inset: 0; z-index: 3000;
+        background: rgba(0,0,0,0.85); /* Darker backdrop */
+        display: none; justify-content: center; align-items: center;
+        backdrop-filter: blur(5px);
+    }
+    .crop-container {
+        background: #1e293b; 
+        padding: 20px; border-radius: 20px;
+        width: 90%; max-width: 500px;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        display: flex; flex-direction: column;
+    }
+    .crop-image-wrapper {
+        max-height: 60vh; /* Limit height so it fits on mobile */
+        overflow: hidden;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        background: #000;
+    }
+    /* Ensure image fits inside wrapper */
+    .crop-image-wrapper img {
+        max-width: 100%; display: block;
+    }
+    
+    .crop-actions { display: flex; gap: 10px; }
+/* Style for the new icons */
+    .setting-icon i {
+        width: 20px;
+        height: 20px;
+        color: #94a3b8; /* Elegant slate color */
+        vertical-align: middle;
+        transition: color 0.2s;
+    }
+
+    .setting-item:hover .setting-icon i {
+        color: #f43f5e; /* Matches your HridyaCare theme color on hover */
+    }
+
+    /* Optional: Premium Gold Glow for specific icons */
+    .icon-premium {
+        color: #fbbf24 !important; 
+        filter: drop-shadow(0 0 3px rgba(251, 191, 36, 0.3));
+    }
+    /* Medical Grid Icon Styling */
+    .mid-icon-box {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        margin-right: 8px;
+    }
+
+    .mid-icon-box svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    /* Medical Colors */
+    .m-red { stroke: #f43f5e; }    /* Blood/Heart */
+    .m-blue { stroke: #3b82f6; }   /* Gender/Height */
+    .m-orange { stroke: #fbbf24; } /* Age/Weight */
+    .m-slate { stroke: #94a3b8; }  /* Location */
+
+    .m-hospital { 
+        stroke: #f43f5e; 
+        fill: rgba(244, 63, 94, 0.1); /* Subtle red tint */
+    }
+
+    /* Style for the Hospital Icon in the selector */
+    .mid-header-icon svg {
+        width: 20px;
+        height: 20px;
+        stroke: #f43f5e;
+        fill: rgba(244, 63, 94, 0.1);
+    }
+
+    /* Style for the Edit Pencil SVG */
+    .mid-edit-btn svg {
+        width: 18px;
+        height: 18px;
+        stroke: white;
+        fill: none;
+        stroke-width: 2.5;
+    }
+
+    /* Fetching State Animation */
+    .fetching {
+        color: rgba(255, 255, 255, 0.4) !important;
+        font-size: 13px !important;
+        font-weight: 400 !important;
+        font-style: italic;
+        animation: pulse 1.5s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 0.5; }
+        50% { opacity: 1; }
+        100% { opacity: 0.5; }
+    }
+
+    /* Spinner Animation */
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .spinner-icon {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-top-color: #fff;
+        border-radius: 50%;
+        margin-right: 6px;
+        animation: spin 0.8s linear infinite;
+        vertical-align: middle;
+    }
+
+    /* Update fetching style for better alignment */
+    .fetching {
+        color: rgba(255, 255, 255, 0.6) !important;
+        font-size: 13px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .mid-edit-btn {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.1);
+        width: 34px; /* Reduced from 42px */
+        height: 34px; /* Reduced from 42px */
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .mid-edit-btn svg {
+        width: 16px; /* Reduced from 18px */
+        height: 16px; /* Reduced from 18px */
+    }
+
+
+    /* --- FULL SCREEN IMAGE PREVIEW --- */
+    .image-viewer-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.9);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 4000;
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+    }
+
+    .image-viewer-modal img {
+        max-width: 90%;
+        max-height: 80vh;
+        border-radius: 20px;
+        box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+    }
+
+    .image-viewer-modal.active {
+        display: flex;
+    }
+
+    .image-viewer-modal.active img {
+        transform: scale(1);
+    }
+
+    /* Update Avatar Container to support two separate actions */
+    .avatar-wrapper { position: relative; width: 100px; height: 100px; margin: 0 auto 15px; }
+
+    /* --- DELETE BUTTON IN VIEWER --- */
+    .viewer-actions {
+        position: absolute;
+        bottom: 40px;
+        display: flex;
+        gap: 20px;
+        z-index: 4001;
+    }
+
+    .action-circle {
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        transition: all 0.2s;
+    }
+
+    .action-circle:hover {
+        background: rgba(244, 63, 94, 0.2);
+        border-color: #f43f5e;
+        transform: scale(1.1);
+    }
+
+    .action-circle svg {
+        width: 20px;
+        height: 20px;
+    }
+    /* Add this inside your <style> block */
+    .delete-btn { 
+        background: rgba(239, 68, 68, 0.15); 
+        color: #f87171; 
+        border: 1px solid rgba(239, 68, 68, 0.3); 
+    }
+    .option-btn { 
+        background: rgba(255,255,255,0.05); 
+        color: #e2e8f0; 
+        border: 1px solid rgba(255,255,255,0.1); 
+    }
+
+    /* Add inside your <style> block */
+    .close-viewer-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 44px;
+        height: 44px;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 4002;
+        backdrop-filter: blur(4px);
+        transition: background 0.2s;
+    }
+    .close-viewer-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    .close-viewer-btn svg {
+        width: 24px;
+        height: 24px;
+        stroke: white;
+        stroke-width: 2.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    <div class="page-header animate-entry">
+        <div class="page-title">My Profile</div>
+    </div>
+
+<div class="profile-card animate-entry">
+        <div class="avatar-wrapper">
+         <div class="avatar-container" onclick="openAvatarOptions()">
+                {% if user.profile_pic %}
+                    <img src="{{ url_for('static', filename='uploads/' + user.profile_pic) }}" 
+                         id="avatarPreview" class="avatar-img" alt="Profile Photo">
+                {% else %}
+                    <img src="{{ url_for('static', filename='uploads/default.jpg') }}" 
+                         id="avatarPreview" class="avatar-img" alt="Default Photo">
+                {% endif %}
+            </div>
+
+            <div class="avatar-edit-badge" onclick="document.getElementById('avatarUpload').click()">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                </svg>
+            </div>
+            <input type="file" id="avatarUpload" name="avatar" accept="image/*" hidden onchange="uploadAvatar(this)">
+        </div>
+
+        <h3 class="profile-name">{{ user.username }}</h3>
+        <p class="profile-email">{{ user.email }}</p>
+    </div>
+
+    <div id="imageViewer" class="image-viewer-modal" onclick="closeImageViewer()">
+        <img id="fullImage" src="">
+    </div>
+
+    <div class="medical-id-card animate-entry delay-1">
+<div class="mid-header">
+    <div class="mid-selector-wrapper">
+        <span class="mid-header-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a4 4 0 0 0 0-8Z"></path>
+                <path d="M12 12v4M10 14h4"></path>
+            </svg>
+        </span>
+        <select id="midSelector" class="mid-selector" onchange="switchMember()">
+            {% for member in family_members %}
+                <option value="{{ member.member_id }}">
+                    {{ "My Profile" if member.relationship == 'self' else member.member_name }}
+                </option>
+            {% endfor %}
+        </select>
+        <span style="font-size: 8px; margin-left: 6px; opacity: 0.5;">▼</span>
+    </div>
+    
+    <div class="mid-edit-btn" onclick="openMedicalEditor()">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+    </div>
+</div>
+        
+<div class="mid-grid">
+    <div class="mid-item highlight">
+        <span class="mid-meta">
+            <span class="mid-icon-box"><svg viewBox="0 0 24 24" class="m-red"><path d="M12 22C12 22 20 18 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 18 12 22 12 22Z"></path></svg></span> 
+            Blood Type
+        </span>
+        <span class="mid-value" id="disp_blood">--</span>
+    </div>
+
+    <div class="mid-item">
+        <span class="mid-meta">
+            <span class="mid-icon-box"><svg viewBox="0 0 24 24" class="m-blue"><circle cx="12" cy="12" r="10"></circle><path d="M12 2v20M2 12h20"></path></svg></span> 
+            Gender
+        </span>
+        <span class="mid-value" id="disp_gender">--</span>
+    </div>
+    
+    <div class="mid-item">
+        <span class="mid-meta">
+            <span class="mid-icon-box"><svg viewBox="0 0 24 24" class="m-orange"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span> 
+            Age
+        </span>
+        <span class="mid-value" id="disp_age">--</span>
+    </div>
+    
+    <div class="mid-item">
+        <span class="mid-meta">
+            <span class="mid-icon-box"><svg viewBox="0 0 24 24" class="m-blue"><path d="m17 4-5-2-5 2M12 2v20M9 22h6"></path></svg></span> 
+            Height
+        </span>
+        <span class="mid-value" id="disp_height">--</span>
+    </div>
+    
+    <div class="mid-item">
+        <span class="mid-meta">
+            <span class="mid-icon-box"><svg viewBox="0 0 24 24" class="m-orange"><rect x="2" y="7" width="20" height="15" rx="2"></rect><path d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"></path></svg></span> 
+            Weight
+        </span>
+        <span class="mid-value" id="disp_weight">--</span>
+    </div>
+    
+    <div class="mid-item" style="grid-column: span 2;">
+        <span class="mid-meta">
+            <span class="mid-icon-box"><svg viewBox="0 0 24 24" class="m-slate"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span> 
+            Location
+        </span>
+        <span class="mid-value" id="disp_city">--</span>
+    </div>
+</div>
+    </div>
+
+<div class="settings-group animate-entry delay-2">
+    <div class="setting-item" onclick="location.href='/report_download_later'">
+        <div style="display: flex; align-items: center;">
+            <span class="setting-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="icon-red">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    <path d="M12 11v6m-3-3l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </span> 
+            Download Heart Report
+        </div>
+        <span class="arrow">›</span>
+    </div>
+
+    <div class="setting-item" onclick="alert('Language feature coming soon')">
+        <div style="display: flex; align-items: center;">
+            <span class="setting-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="icon-blue" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 5h12M7 2h1M7 22c3.5 0 7-3 7-7 0-3-2.5-5-5-5-1.5 0-3 .5-4 1.5M2 22l5-5"></path>
+                    <path d="M14 18l5-10 5 10M16 14h6"></path>
+                </svg>
+            </span> 
+            Language
+        </div>
+        <span class="arrow">›</span>
+    </div>
+    
+    <div class="setting-item" onclick="shareApp()">
+        <div style="display: flex; align-items: center;">
+            <span class="setting-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="icon-slate" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"></path>
+                </svg>
+            </span> 
+            Share App
+        </div>
+        <span class="arrow">›</span>
+    </div>
+    <div class="setting-item" onclick="window.location.href='/feedback'">
+        <div style="display: flex; align-items: center;">
+            <span class="setting-icon">
+                <svg viewBox="0 0 24 24" class="icon-amber">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.7 8.38 8.38 0 0 1 3.8.9L21 3l-1.5 5.5Z"></path>
+                    <line x1="9" y1="12" x2="15" y2="12" stroke-linecap="round"></line>
+                    <line x1="12" y1="9" x2="12" y2="15" stroke-linecap="round"></line>
+                </svg>
+            </span> 
+            Send Feedback
+        </div>
+        <span class="arrow">›</span>
+    </div>
+</div>
+
+
+<div class="settings-group animate-entry delay-3">
+        <div class="setting-item" onclick="window.location.href='/privacy-policy'">
+            <div style="display: flex; align-items: center;">
+                <span class="setting-icon">
+                    <svg viewBox="0 0 24 24" class="icon-green">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <path d="M12 8v4"></path>
+                        <path d="M12 16h.01"></path>
+                    </svg>
+                </span> 
+                Privacy Policy
+            </div>
+            <span class="arrow">›</span>
+        </div>
+        
+        <div class="setting-item" onclick="location.href='/terms'">
+            <div style="display: flex; align-items: center;">
+                <span class="setting-icon">
+                    <svg viewBox="0 0 24 24" class="icon-purple">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                </span> 
+                Terms & Conditions
+            </div>
+            <span class="arrow">›</span>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('logout') }}" style="margin-bottom: -60px;" class="animate-entry delay-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="logout-btn">Log Out</button>
+    </form>
+
+    <div id="medicalModal" class="gender-modal">
+        <div class="gender-card">
+            <h4 id="modalTitle">Update Medical ID</h4>
+            
+            <form method="POST" action="{{ url_for('update_medical_id') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" id="edit_member_id" name="member_id">
+
+                <label>Gender</label>
+                <select name="gender" id="input_gender">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                    <option value="NA">Prefer not to say</option>
+                </select>
+
+                <div style="display:flex; gap:12px;">
+                    <div style="flex:1;">
+                        <label>Age</label>
+                        <input type="number" id="input_age" name="age" placeholder="e.g. 25">
+                    </div>
+                     <div style="flex:1;" class="city-input-wrapper">
+                         <label>City</label>
+                         <input type="text" id="cityInput" name="city" placeholder="City" autocomplete="off">
+                         <ul id="suggestionsList" class="suggestions-list"></ul>
+                     </div>
+                </div>
+
+                <label>Blood Type</label>
+                <select name="blood_type" id="input_blood">
+                    <option value="" disabled selected>Select Blood Type</option>
+                    <option value="A+">A+</option> <option value="A-">A-</option>
+                    <option value="B+">B+</option> <option value="B-">B-</option>
+                    <option value="AB+">AB+</option> <option value="AB-">AB-</option>
+                    <option value="O+">O+</option> <option value="O-">O-</option>
+                </select>
+
+                <div style="display:flex; gap:12px;">
+                    <div style="flex:1;">
+                        <label>Height (cm)</label>
+                        <input type="number" step="0.01" id="input_height" name="height" placeholder="175">
+                    </div>
+                    <div style="flex:1;">
+                        <label>Weight (kg)</label>
+                        <input type="number" step="0.01" id="input_weight" name="weight" placeholder="70">
+                    </div>
+                </div>
+
+                <button type="submit" class="modal-btn save-btn">Save Changes</button>
+                <button type="button" class="modal-btn cancel-btn" onclick="closeMedicalEditor()">Cancel</button>
+            </form>
+        </div>
+    </div>
+    <div id="cropModal" class="crop-modal">
+    <div class="crop-container">
+        <h4 style="color:white; margin:0 0 15px 0; text-align:center;">Crop Profile Photo</h4>
+        
+        <div class="crop-image-wrapper">
+            <img id="imageToCrop" src="">
+        </div>
+
+        <div class="crop-actions">
+            <button onclick="saveCrop()" class="modal-btn save-btn" style="margin:0;">Set Photo</button>
+            <button onclick="closeCropModal()" class="modal-btn cancel-btn" style="margin:0; border:1px solid #475569;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+
+<div id="imageViewer" class="image-viewer-modal">
+        <div style="position:absolute; inset:0;" onclick="closeImageViewer()"></div>
+        
+        <div class="close-viewer-btn" onclick="closeImageViewer()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </div>
+
+        <img id="fullImage" src="" alt="Full Profile">
+
+        <div class="viewer-actions">
+             </div>
+    </div>
+
+    
+<div id="avatarOptionsModal" class="gender-modal">
+        <div class="gender-card">
+            <h4>Profile Photo</h4>
+            
+            <button class="modal-btn option-btn" onclick="viewImage(); closeAvatarOptions()">
+                View Photo
+            </button>
+            
+            <button class="modal-btn option-btn" onclick="document.getElementById('avatarUpload').click(); closeAvatarOptions()">
+                Upload New Photo
+            </button>
+            
+            <button id="btnRemovePhoto" class="modal-btn delete-btn" onclick="deleteAvatar(); closeAvatarOptions()">
+                Remove Photo
+            </button>
+            
+            <button class="modal-btn cancel-btn" onclick="closeAvatarOptions()">
+                Cancel
+            </button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+<script>
+    // ==========================================
+    // 1. PROFILE PHOTO CROPPER LOGIC
+    // ==========================================
+    
+    let cropper; 
+    const imageToCrop = document.getElementById('imageToCrop');
+    const avatarInput = document.getElementById('avatarUpload');
+    const cropModal = document.getElementById('cropModal');
+
+    function uploadAvatar(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imageToCrop.src = e.target.result;
+                openCropModal();
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function openCropModal() {
+        cropModal.style.display = 'flex';
+        if(cropper) { cropper.destroy(); }
+        cropper = new Cropper(imageToCrop, {
+            aspectRatio: 1, viewMode: 1, dragMode: 'move', autoCropArea: 0.8, responsive: true,
+        });
+    }
+
+    function closeCropModal() {
+        cropModal.style.display = 'none';
+        if(cropper) { cropper.destroy(); cropper = null; }
+        avatarInput.value = ""; 
+    }
+
+    function saveCrop() {
+        if(!cropper) return;
+        const saveBtn = document.querySelector('#cropModal .save-btn');
+        const originalText = saveBtn.innerText;
+        saveBtn.innerText = "Uploading...";
+
+        cropper.getCroppedCanvas({ width: 300, height: 300 }).toBlob((blob) => {
+            const formData = new FormData();
+            formData.append('avatar', blob, 'profile_crop.jpg');
+            formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+
+            fetch('/upload-avatar', { method: 'POST', body: formData })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('avatarPreview').src = URL.createObjectURL(blob);
+                    closeCropModal();
+                } else { alert("Error: " + data.message); }
+            })
+            .catch(error => { alert("Upload failed."); })
+            .finally(() => { saveBtn.innerText = originalText; });
+        }, 'image/jpeg', 0.9);
+    }
+
+    // ==========================================
+    // 2. MEDICAL DATA LOGIC
+    // ==========================================
+
+    let currentData = { id: null, gender: "", age: "", blood_type: "", height: "", weight: "", city: "" };
+
+    function formatValue(val, suffix='') {
+        if (val !== null && val !== undefined && val !== "") return val + suffix;
+        return null;
+    }
+
+    function setElementText(id, value, suffix='') {
+        const el = document.getElementById(id);
+        el.classList.remove('fetching');
+        const formatted = formatValue(value, suffix);
+        if (formatted) {
+            el.innerText = formatted;
+            el.classList.remove('empty');
+            el.style.animation = 'none'; el.offsetHeight; el.style.animation = 'fadeIn 0.3s ease-out';
+        } else {
+            el.innerText = "Not Set";
+            el.classList.add('empty');
+        }
+    }
+
+    async function switchMember() {
+        const selector = document.getElementById('midSelector');
+        if (!selector || selector.options.length === 0) return;
+
+        const memberId = selector.value;
+        const fields = ['gender', 'age', 'blood', 'height', 'weight', 'city'];
+        
+        fields.forEach(id => {
+            const el = document.getElementById('disp_' + id);
+            el.innerHTML = '<span class="spinner-icon"></span>Fetching...';
+            el.classList.add('fetching', 'empty');
+        });
+
+        try {
+            const res = await fetch(`/api/member/${memberId}`);
+            if (!res.ok) throw new Error("Fetch failed"); 
+            const data = await res.json();
+
+            fields.forEach(id => {
+                const el = document.getElementById('disp_' + id);
+                el.classList.remove('fetching');
+                el.innerHTML = "";
+            });
+
+            setElementText('disp_gender', data.gender);
+            setElementText('disp_age', data.age);
+            setElementText('disp_blood', data.blood_type);
+            setElementText('disp_height', data.height, " cm");
+            setElementText('disp_weight', data.weight, " kg");
+            setElementText('disp_city', data.city);
+
+            currentData = { id: memberId, ...data };
+        } catch (e) { 
+            fields.forEach(id => {
+                const el = document.getElementById('disp_' + id);
+                el.innerText = "Error"; el.classList.remove('fetching');
+            });
+        }
+    }
+
+    // --- Modal Logic ---
+    function openMedicalEditor(){
+        const selectedId = document.getElementById("midSelector").value;
+        document.getElementById("edit_member_id").value = selectedId;
+        
+        document.getElementById('input_gender').value = currentData.gender || 'Male';
+        document.getElementById('input_age').value = currentData.age || '';
+        document.getElementById('input_blood').value = currentData.blood_type || '';
+        document.getElementById('input_height').value = currentData.height || '';
+        document.getElementById('input_weight').value = currentData.weight || '';
+        document.getElementById('cityInput').value = currentData.city || '';
+        
+        document.getElementById("medicalModal").style.display = "flex";
+    }
+
+    function closeMedicalEditor(){ document.getElementById("medicalModal").style.display = "none"; }
+
+    document.getElementById("medicalModal").addEventListener('click', function(e) {
+        if (e.target === this) closeMedicalEditor();
+    });
+
+    // ==========================================
+    // 3. UTILITIES & INITIALIZATION
+    // ==========================================
+
+    function shareApp(){
+        if(navigator.share){ navigator.share({ title: 'HridyaCare', text: "Check out HridyaCare!", url: window.location.origin }); } 
+        else { alert("Sharing not supported on this browser."); }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const selector = document.getElementById("midSelector");
+        if(selector && selector.options.length > 0) { switchMember(); }
+        initCityAutoSuggest();
+    });
+
+    function initCityAutoSuggest() {
+        const cities = ["Ahmedabad","Surat","Vadodara","Rajkot","Gandhinagar","Mumbai","Pune","Nagpur","Nashik","Thane","Delhi","Noida","Bengaluru","Chennai","Hyderabad","Kolkata","Jaipur","Lucknow"];
+        const cityInput = document.getElementById("cityInput");
+        const suggestionsList = document.getElementById("suggestionsList");
+
+        if (cityInput) {
+            cityInput.addEventListener("input", function() {
+                const input = this.value.toLowerCase();
+                suggestionsList.innerHTML = "";
+                if (!input) { suggestionsList.style.display = "none"; return; }
+                
+                const filtered = cities.filter(city => city.toLowerCase().startsWith(input));
+                if (filtered.length > 0) {
+                    filtered.forEach(city => {
+                        const li = document.createElement("li");
+                        li.textContent = city;
+                        li.onclick = function() { cityInput.value = city; suggestionsList.style.display = "none"; };
+                        suggestionsList.appendChild(li);
+                    });
+                    suggestionsList.style.display = "block";
+                } else { suggestionsList.style.display = "none"; }
+            });
+            document.addEventListener("click", function(e) {
+                if (e.target !== cityInput && e.target !== suggestionsList) { suggestionsList.style.display = "none"; }
+            });
+        }
+    }
+
+    // --- UPDATED VIEW IMAGE LOGIC (Removes JS Error) ---
+    function viewImage() {
+        const previewImg = document.getElementById('avatarPreview');
+        const viewerModal = document.getElementById('imageViewer');
+        const fullImg = document.getElementById('fullImage');
+        
+        // Removed lines referring to deletePhotoBtn because it was removed from HTML
+        fullImg.src = previewImg.src;
+        
+        viewerModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeImageViewer() {
+        document.getElementById('imageViewer').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    async function deleteAvatar() {
+        if (!confirm("Are you sure you want to remove your profile picture?")) return;
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        try {
+            const response = await fetch('/delete-avatar', { method: 'POST', headers: { 'X-CSRFToken': csrfToken } });
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('avatarPreview').src = "{{ url_for('static', filename='uploads/default.jpg') }}";
+                // Viewer is likely closed if we are deleting from menu, but harmless to call
+                closeImageViewer(); 
+            } else { alert("Error: " + data.message); }
+        } catch (error) { alert("Failed to delete photo."); }
+    }
+
+    // --- AVATAR OPTIONS MENU LOGIC ---
+    function openAvatarOptions() {
+        const previewImg = document.getElementById('avatarPreview');
+        const isDefault = previewImg.src.includes('default.jpg');
+        
+        // Hide remove button if using default image
+        const removeBtn = document.getElementById('btnRemovePhoto');
+        if (removeBtn) {
+            removeBtn.style.display = isDefault ? 'none' : 'block';
+        }
+        
+        document.getElementById('avatarOptionsModal').style.display = 'flex';
+    }
+
+    function closeAvatarOptions() {
+        document.getElementById('avatarOptionsModal').style.display = 'none';
+    }
+
+    document.getElementById("avatarOptionsModal").addEventListener('click', function(e) {
+        if (e.target === this) closeAvatarOptions();
+    });
+</script>
+{% endblock %}

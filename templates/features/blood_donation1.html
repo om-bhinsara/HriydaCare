@@ -1,0 +1,499 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Blood Donation Eligibility | HridyaCare{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* ================= GLOBAL STYLES ================= */
+    * { font-family: "Outfit", sans-serif; box-sizing: border-box; }
+
+    html, body { overflow-x: hidden; width: 100%; margin: 0; padding: 0; }
+
+    body {
+        background-color: #0b1121 !important;
+        background-image: radial-gradient(at 50% 0%, #1e293b 0%, #0b1121 70%) !important;
+        background-attachment: fixed;
+        color: #f1f5f9;
+    }
+
+    /* Override transparent headers if needed */
+    nav, .navbar, header, .app-header {
+        background: transparent !important; box-shadow: none !important; border-bottom: none !important;
+        z-index: 10; position: relative;
+    }
+
+    :root {
+        --primary: #ff2d55;
+        --card-bg: rgba(30, 41, 59, 0.6);
+        --card-border: rgba(255, 255, 255, 0.08);
+        --text-muted: #94a3b8;
+    }
+
+    .assessment-wrapper {
+        min-height: 100vh; position: absolute; top: 0; left: 0; width: 100vw; 
+        margin-left: calc(50% - 50vw); padding-bottom: 80px; z-index: 0;
+    }
+
+    .bg-blur {
+        position: fixed; top: -150px; left: 50%; transform: translateX(-50%);
+        width: 80%; height: 500px; background: var(--primary); opacity: 0.08;
+        filter: blur(120px); z-index: -1; pointer-events: none;
+    }
+
+    .container {
+        max-width: 650px; margin: auto; padding: 120px 20px 40px;
+        position: relative; z-index: 1;
+    }
+
+    h2 { 
+        margin: 0 0 10px 0; font-size: 32px; text-align: center; 
+        letter-spacing: -1px; font-weight: 800; 
+        background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .subtitle { color: var(--text-muted); margin-bottom: 40px; text-align: center; font-size: 16px; font-weight: 400; }
+
+    /* ================= STEP UI ================= */
+    .step-container { display: none; flex-direction: column; width: 100%; opacity: 0; transition: opacity 0.4s ease-out; }
+    .step-container.active { display: flex; opacity: 1; animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ================= CARDS ================= */
+    .card-ui {
+        background: var(--card-bg); border: 1px solid var(--card-border);
+        backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+        border-radius: 24px; padding: 32px; margin-bottom: 24px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ================= MEMBER LIST CONTAINER ================= */
+    #family-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 10px;
+    }
+
+    /* ================= MEMBER CARD UI ================= */
+    .member-card {
+        display: flex;
+        align-items: center;
+        padding: 16px 20px;
+        background: rgba(30, 41, 59, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .member-card:hover {
+        background: rgba(30, 41, 59, 0.95);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Self Highlight */
+    .member-card.is-self {
+        background: linear-gradient(145deg, rgba(244, 63, 94, 0.1), rgba(30, 41, 59, 0.6));
+        border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    .member-card.is-self:hover {
+        box-shadow: 0 8px 30px rgba(244, 63, 94, 0.15);
+    }
+
+    /* ================= AVATAR ================= */
+    .member-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #0f172a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin-right: 18px;
+        color: #cbd5e1;
+        border: 2px solid rgba(255,255,255,0.05);
+        flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    /* Self Avatar Glow */
+    .member-card.is-self .member-avatar {
+        background: linear-gradient(135deg, #f43f5e, #e11d48);
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 0 15px rgba(244, 63, 94, 0.5);
+        animation: pulse-red 2s infinite;
+    }
+
+    /* ================= MEMBER TEXT ================= */
+    .member-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .member-name {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 2px;
+    }
+
+    .member-relation {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+    }
+
+    /* ================= LOADING SPINNER ================= */
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(255, 255, 255, 0.1);
+        border-left-color: #f43f5e;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 15px auto;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* ================= MEMBER LOAD ANIMATION ================= */
+    @keyframes slideInFade {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-card {
+        opacity: 0;
+        animation: slideInFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    /* ================= SELF PULSE EFFECT ================= */
+    @keyframes pulse-red {
+        0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+    }
+
+    /* Buttons */
+    .btn-main {
+        background: linear-gradient(135deg, #ff2d55 0%, #e11d48 100%); color: white;
+        padding: 18px; border-radius: 16px; font-size: 16px; font-weight: 700; border: none;
+        width: 100%; cursor: pointer; margin-top: 20px; 
+        box-shadow: 0 8px 20px -6px rgba(244, 63, 94, 0.5);
+        transition: all 0.3s ease; letter-spacing: 0.5px;
+    }
+    .btn-main:hover { transform: translateY(-2px); box-shadow: 0 12px 30px -8px rgba(244, 63, 94, 0.7); }
+
+    .btn-outline {
+        background: transparent; color: var(--text-muted); padding: 16px; border-radius: 16px;
+        border: 1px solid var(--card-border); font-size: 15px; width: 100%; margin-top: 16px;
+        cursor: pointer; transition: all 0.3s ease; font-weight: 600; text-align: center;
+    }
+    .btn-outline:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,0.05); }
+
+    /* Result Box Styling */
+    #eligibilityBox {
+        margin-top: 20px; padding: 24px; border-radius: 20px;
+        background: rgba(15, 23, 42, 0.6); 
+        border: 1px solid rgba(255,255,255,0.08);
+        text-align: center;
+    }
+    #eligibilityStatus { font-size: 20px; font-weight: 700; margin-bottom: 10px; color: white; }
+    #eligibilityReason { color: #cbd5e1; font-size: 15px; line-height: 1.6; }
+
+    /* Popup Modal */
+    .modal-bg {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+        display: none; z-index: 9999; backdrop-filter: blur(5px);
+    }
+    .modal-box {
+        background: #0f172a; width: 420px; margin: 10% auto;
+        padding: 24px; border-radius: 18px; position: relative;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+    .modal-box h3 { margin-top: 0; color: white; font-size: 20px; margin-bottom: 20px; }
+    
+    .modal-box input {
+        width: 100%; padding: 14px; border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.1); background: #1e293b;
+        color: white; margin-bottom: 12px; font-size: 15px;
+    }
+    .modal-box input:focus { outline: none; border-color: var(--primary); }
+
+    .modal-close {
+        position: absolute; top: 15px; right: 15px;
+        cursor: pointer; font-size: 18px; color: #94a3b8;
+    }
+    .modal-close:hover { color: white; }
+</style>
+
+<div class="assessment-wrapper">
+    <div class="bg-blur"></div>
+
+    <div class="container">
+        <div class="card-ui">
+            <input type="hidden" id="selected-member-id">
+
+            <div id="step-family" class="step-container active">
+                <h2>🩸 Blood Donation Eligibility</h2>
+                <p class="subtitle">Select a profile to check donation readiness.</p>
+
+                <div id="family-list">
+                    <div style="text-align:center; padding:40px 0;">
+                        <div class="spinner"></div>
+                        <p style="color:#64748b; margin:0;">Loading profiles...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="step-result" class="step-container">
+                <h2>Eligibility Result</h2>
+                <p class="subtitle">Analysis based on current health metrics.</p>
+
+                <div id="eligibilityBox">
+                    <h3 id="eligibilityStatus">Checking...</h3>
+                    <div id="eligibilityReason"></div>
+                </div>
+
+                <button class="btn-outline" onclick="goToStep('step-family')">Check Another Profile</button>
+                <button class="btn-main" style="margin-top:10px; background:transparent; border:1px solid #334155;" onclick="window.location.href='{{ url_for('index') }}'">Back to Dashboard</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="missingModal" class="modal-bg">
+  <div class="modal-box">
+    <span class="modal-close" onclick="closeModal()">✖</span>
+    <h3>Complete Health Data</h3>
+    <p style="color:#94a3b8; font-size:14px; margin-bottom:15px;">We need a few more details to calculate eligibility accurately.</p>
+
+    <input type="number" id="ageInput" placeholder="Age">
+    <input type="number" id="heightInput" placeholder="Height (cm)">
+    <input type="number" id="weightInput" placeholder="Weight (kg)">
+
+    <button id="saveBtn" class="btn-main" onclick="saveMissing()">Save & Continue</button>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+lucide.createIcons();
+
+/* ================= STEP NAVIGATION ================= */
+function goToStep(stepId) {
+    document.querySelectorAll(".step-container").forEach(s => s.classList.remove("active"));
+    document.getElementById(stepId).classList.add("active");
+    window.scrollTo({top:0, behavior: 'smooth'});
+}
+
+/* ================= LOAD FAMILY MEMBERS ================= */
+document.addEventListener("DOMContentLoaded", loadMembers);
+
+async function loadMembers() {
+    const list = document.getElementById("family-list");
+    
+    try {
+        const res = await fetch("/api/family-members");
+        const members = await res.json();
+
+        list.innerHTML = "";
+
+        if (!members || members.length === 0) {
+            list.innerHTML = `<p style="text-align:center; color:#64748b;">No profiles found.</p>`;
+            return;
+        }
+
+        members.sort((a,b) => a.relationship === "self" ? -1 : 1);
+
+        members.forEach((m, index) => {
+            const div = document.createElement("div");
+            const isSelf = m.relationship.toLowerCase() === "self";
+            
+            // Add required classes matching your UI request
+            div.className = `member-card animate-card ${isSelf ? 'is-self' : ''}`;
+            div.style.animationDelay = `${index * 0.1}s`;
+
+            div.onclick = () => selectMember(m);
+
+            div.innerHTML = `
+                <div class="member-avatar">
+                    <span>${isSelf ? "❤️" : m.name[0].toUpperCase()}</span>
+                </div>
+                <div class="member-info">
+                    <div class="member-name">${isSelf ? "You (Self)" : m.name}</div>
+                    <div class="member-relation">${m.relationship}</div>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    } catch (e) {
+        list.innerHTML = `<p style="text-align:center; color:#ef4444;">Error loading members.</p>`;
+    }
+}
+
+/* ================= SELECT MEMBER ================= */
+function selectMember(member) {
+    document.getElementById("selected-member-id").value = member.id;
+    goToStep("step-result");
+    checkEligibility(member.id);
+}
+
+/* ================= CHECK ELIGIBILITY ================= */
+async function checkEligibility(memberId) {
+    const statusEl = document.getElementById("eligibilityStatus");
+    const reasonEl = document.getElementById("eligibilityReason");
+    
+    // Default Loading State
+    statusEl.innerText = "Analyzing...";
+    statusEl.style.color = "#fbbf24"; 
+    reasonEl.innerText = "Fetching health metrics...";
+
+    // Use Timestamp to prevent caching of missing data status
+    const t = new Date().getTime();
+
+    try {
+        const missRes = await fetch(`/api/blood-donation/check-missing?member_id=${memberId}&t=${t}`);
+        const missData = await missRes.json();
+
+        if (missData.missing && missData.missing.length > 0) {
+            openModal();
+            return;
+        }
+
+        runEligibility(memberId);
+    } catch (e) {
+        statusEl.innerText = "Error";
+        reasonEl.innerText = "Could not verify missing data.";
+    }
+}
+
+/* ================= SAVE MISSING DATA ================= */
+async function saveMissing() {
+    const btn = document.getElementById("saveBtn");
+    const memberId = document.getElementById("selected-member-id").value;
+    const age = document.getElementById("ageInput").value;
+    const height = document.getElementById("heightInput").value;
+    const weight = document.getElementById("weightInput").value;
+
+    if (!age || !height || !weight) {
+        alert("Please fill all fields.");
+        return;
+    }
+
+    // Disable button to prevent double-click
+    btn.innerText = "Saving...";
+    btn.disabled = true;
+
+    const payload = {
+        member_id: parseInt(memberId),
+        age: parseInt(age),
+        height: parseFloat(height),
+        weight: parseFloat(weight)
+    };
+
+    try {
+        const res = await fetch("/api/blood-donation/save-missing", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            closeModal();
+            // Important: Wait slightly for DB to update before checking again
+            setTimeout(() => {
+                checkEligibility(memberId);
+                btn.innerText = "Save & Continue";
+                btn.disabled = false;
+            }, 500);
+        } else {
+            alert("Failed to save data. Please try again.");
+            btn.innerText = "Save & Continue";
+            btn.disabled = false;
+        }
+    } catch (e) {
+        alert("Network error.");
+        btn.innerText = "Save & Continue";
+        btn.disabled = false;
+    }
+}
+
+/* ================= RUN FINAL CHECK ================= */
+async function runEligibility(memberId) {
+    const status = document.getElementById("eligibilityStatus");
+    const reason = document.getElementById("eligibilityReason");
+    const t = new Date().getTime(); // Prevent caching
+
+    try {
+        const res = await fetch(`/api/blood-donation-eligibility?member_id=${memberId}&t=${t}`);
+        const data = await res.json();
+
+        // 1. PRIORITY: Check for explicit disqualification (e.g. Underweight, Age)
+        if (data.eligible === false) {
+            status.innerHTML = `<span style="color:#ef4444; display:flex; align-items:center; justify-content:center; gap:8px;"><i data-lucide="x-circle"></i> Not Eligible</span>`;
+            reason.innerHTML = `<p style="margin-top:10px; color:#fca5a5;">${data.reason}</p>`;
+            lucide.createIcons();
+            return;
+        }
+
+        // 2. CHECK IF HEART DATA IS MISSING OR ZERO (Only if Bio-data Passed)
+        if (!data.avg_hr || data.avg_hr === 0) {
+            status.innerHTML = `<span style="color:#f59e0b; display:flex; align-items:center; justify-content:center; gap:8px;"><i data-lucide="alert-triangle"></i> Not Enough Data</span>`;
+            reason.innerHTML = `<p style="margin-top:10px; color:#cbd5e1; font-size:14px;">We couldn't find sufficient heart rate or stress data for this profile. Please record some health metrics using the device first.</p>`;
+            lucide.createIcons();
+            return;
+        }
+
+        // 3. SUCCESS: ELIGIBLE
+        status.innerHTML = `<span style="color:#10b981; display:flex; align-items:center; justify-content:center; gap:8px;"><i data-lucide="check-circle"></i> Eligible to Donate</span>`;
+        reason.innerHTML = `
+            <div style="margin-top:15px; text-align:left; background:rgba(255,255,255,0.05); padding:15px; border-radius:12px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>BMI:</span> <b style="color:white;">${data.bmi}</b></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Avg HR:</span> <b style="color:white;">${data.avg_hr} BPM</b></div>
+                <div style="display:flex; justify-content:space-between;"><span>Stress Score:</span> <b style="color:white;">${data.stress_score}/40</b></div>
+            </div>
+            <p style="margin-top:15px; font-size:13px; color:#fbbf24;"><i data-lucide="alert-circle" style="width:14px; vertical-align:middle;"></i> Note: Please check hemoglobin levels before visiting.</p>
+        `;
+        lucide.createIcons();
+
+    } catch (e) {
+        status.innerText = "Error";
+        reason.innerText = "Failed to calculate eligibility.";
+    }
+}
+
+/* ================= MODAL ================= */
+function openModal() {
+    document.getElementById("missingModal").style.display = "block";
+}
+function closeModal() {
+    document.getElementById("missingModal").style.display = "none";
+}
+</script>
+{% endblock %}

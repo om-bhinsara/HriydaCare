@@ -1,0 +1,578 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Feedback | HridyaCare{% endblock %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    /* --- COMMON STYLES FOR ALL PAGES --- */
+    :root {
+        --bg-dark: #0f172a;
+        --card-bg: rgba(30, 41, 59, 0.6);
+        --card-border: rgba(255, 255, 255, 0.08);
+        --primary: #f43f5e;
+        --primary-glow: rgba(244, 63, 94, 0.25);
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --radius-lg: 20px;
+        --radius-md: 12px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Override Body Background */
+    body {
+        background: var(--bg-dark);
+        color: var(--text-main);
+        font-family: 'Outfit', sans-serif;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-dark); }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+    /* --- PAGE LAYOUT --- */
+    .page-layout {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 30px 40px 60px;
+    }
+
+    /* --- HEADER SECTION --- */
+    .page-header {
+        text-align: center;
+        margin-bottom: 50px;
+        padding: 0;
+    }
+    
+    .header-badge {
+        display: inline-block;
+        padding: 8px 20px;
+        background: rgba(244, 63, 94, 0.1);
+        color: var(--primary);
+        border-radius: 100px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        border: 1px solid rgba(244, 63, 94, 0.2);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .page-header h1 {
+        font-size: 3rem;
+        font-weight: 800;
+        margin-bottom: 20px;
+        color: var(--text-main);
+        letter-spacing: -1px;
+        line-height: 1.1;
+    }
+
+    .page-header p {
+        color: var(--text-muted);
+        font-size: 1.2rem;
+        line-height: 1.6;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    /* --- CONTENT CONTAINER --- */
+    .content-container {
+        width: 100%;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    /* --- CONTENT SECTIONS --- */
+    .content-section {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-lg);
+        padding: 45px 50px;
+        margin-bottom: 30px;
+        transition: var(--transition);
+        backdrop-filter: blur(12px);
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    .content-section:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 20px 50px -15px rgba(0,0,0,0.5);
+        transform: translateY(-2px);
+    }
+
+    .content-section h3 {
+        color: var(--text-main);
+        font-size: 1.8rem;
+        margin-bottom: 30px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        position: relative;
+        padding-bottom: 15px;
+    }
+
+    .content-section h3::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 60px;
+        height: 3px;
+        background: var(--primary);
+        border-radius: 2px;
+    }
+
+    /* --- FORM STYLING --- */
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+        margin-bottom: 25px;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+        position: relative;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-main);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .label-muted {
+        color: var(--text-muted);
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+
+    /* INPUT FIXED STYLING */
+    input, textarea {
+        width: 100%;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-md);
+        padding: 16px 20px;
+        color: var(--text-main);
+        font-size: 1rem;
+        font-family: 'Outfit', sans-serif;
+        transition: var(--transition);
+    }
+
+    /* SELECT FIXED STYLING - Arrow positioned properly */
+    select {
+        width: 100%;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-md);
+        padding: 16px 20px;
+        color: var(--text-main);
+        font-size: 1rem;
+        font-family: 'Outfit', sans-serif;
+        transition: var(--transition);
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 16px center;
+        background-size: 16px;
+        padding-right: 45px;
+    }
+
+    /* Remove default dropdown arrow for Firefox */
+    select::-ms-expand {
+        display: none;
+    }
+
+    /* For IE10+ */
+    select::-ms-value {
+        background: transparent;
+        color: var(--text-main);
+    }
+
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        background: rgba(15, 23, 42, 0.9);
+        box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.1);
+    }
+
+    /* Custom focus styling for select to match */
+    select:focus {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f43f5e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    }
+
+    input[readonly] {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted);
+        cursor: not-allowed;
+        border-color: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Readonly select styling - keep arrow but make it muted */
+    select[readonly] {
+        background: rgba(255, 255, 255, 0.05) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 16px center / 16px;
+        color: var(--text-muted);
+        cursor: not-allowed;
+        border-color: rgba(255, 255, 255, 0.05);
+    }
+
+    textarea {
+        min-height: 160px;
+        resize: vertical;
+        line-height: 1.6;
+    }
+
+    /* --- PRIMARY BUTTON --- */
+    .primary-button {
+        display: inline-block;
+        width: 100%;
+        color: #fff;
+        background: linear-gradient(135deg, #f43f5e, #e11d48);
+        padding: 18px;
+        border-radius: var(--radius-md);
+        font-weight: 700;
+        text-decoration: none;
+        font-size: 1.1rem;
+        box-shadow: 0 10px 30px -5px rgba(244, 63, 94, 0.4);
+        transition: var(--transition);
+        border: none;
+        cursor: pointer;
+        text-align: center;
+        margin-top: 10px;
+    }
+    
+    .primary-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 40px -5px rgba(244, 63, 94, 0.6);
+    }
+
+    /* --- HIGHLIGHT BOX --- */
+    .highlight-box {
+        background: linear-gradient(90deg, rgba(244, 63, 94, 0.06) 0%, transparent 100%);
+        border-left: 4px solid var(--primary);
+        padding: 20px 25px;
+        border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        margin: 25px 0 0;
+        width: 100%;
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .highlight-box p { 
+        color: var(--text-main); 
+        margin-bottom: 0; 
+        font-weight: 500;
+        font-size: 1rem;
+        line-height: 1.6;
+        flex: 1;
+    }
+
+    .highlight-icon {
+        color: var(--primary);
+        font-size: 1.2rem;
+        margin-top: 2px;
+    }
+
+    /* --- INFO SECTION --- */
+    .info-section {
+        background: transparent;
+        border: 2px dashed var(--card-border);
+        text-align: center;
+        padding: 40px;
+        border-radius: var(--radius-lg);
+    }
+    
+    .info-section h3 {
+        font-size: 1.6rem;
+        margin-bottom: 15px;
+    }
+    
+    .info-section h3::after {
+        display: none;
+    }
+    
+    .info-section p {
+        color: var(--text-muted);
+        font-size: 1rem;
+        line-height: 1.6;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    /* --- PAGE FOOTER --- */
+    .page-footer {
+        text-align: center; 
+        color: var(--text-muted); 
+        font-size: 0.9rem; 
+        margin-top: 60px; 
+        padding-top: 30px; 
+        border-top: 1px solid var(--card-border);
+        width: 100%;
+    }
+
+    /* --- SUCCESS TOAST --- */
+    .toast-success {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 16px 32px;
+        border-radius: 100px;
+        font-weight: 600;
+        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+        z-index: 1000;
+        animation: slideUpFade 4s forwards;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    @keyframes slideUpFade {
+        0% { transform: translate(-50%, 20px); opacity: 0; }
+        10% { transform: translate(-50%, 0); opacity: 1; }
+        90% { transform: translate(-50%, 0); opacity: 1; }
+        100% { transform: translate(-50%, -20px); opacity: 0; }
+    }
+
+    /* --- MOBILE RESPONSIVENESS --- */
+    @media (max-width: 1200px) {
+        .page-layout {
+            padding: 30px 30px 50px;
+        }
+        
+        .content-section {
+            padding: 40px 35px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-layout {
+            padding: 25px 20px 40px;
+        }
+        
+        .page-header h1 {
+            font-size: 2.5rem;
+        }
+        
+        .content-section { 
+            padding: 30px 25px; 
+        }
+        
+        .content-section h3 {
+            font-size: 1.6rem;
+        }
+        
+        .form-grid {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .info-section {
+            padding: 30px 25px;
+        }
+        
+        select {
+            padding-right: 45px;
+            background-position: right 12px center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .page-layout {
+            padding: 20px 15px 30px;
+        }
+        
+        .page-header h1 {
+            font-size: 2rem;
+        }
+        
+        .page-header p {
+            font-size: 1.1rem;
+            padding: 0 10px;
+        }
+        
+        .content-section { 
+            padding: 25px 20px; 
+        }
+        
+        .primary-button {
+            padding: 16px;
+            font-size: 1rem;
+        }
+        
+        .highlight-box {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .highlight-icon {
+            align-self: flex-start;
+        }
+        
+        select {
+            padding: 14px 16px 14px 16px;
+            padding-right: 40px;
+            background-position: right 12px center;
+            background-size: 14px;
+        }
+        
+        input, textarea {
+            padding: 14px 16px;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add hover effect to content sections
+        const contentSections = document.querySelectorAll('.content-section');
+        contentSections.forEach(section => {
+            section.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+            });
+            
+            section.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Add focus effects to form elements
+        const formElements = document.querySelectorAll('input, select, textarea');
+        formElements.forEach(element => {
+            element.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-2px)';
+            });
+            
+            element.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Auto-hide success toast after animation
+        const toast = document.getElementById('toast');
+        if (toast) {
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 4000);
+        }
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="page-layout">
+  
+  <div class="page-header">
+    <span class="header-badge">Share Your Voice</span>
+    <h1>We Value Your Feedback</h1>
+    <p>
+      Help us shape the future of HridyaCare. Whether it's a bug report, feature request, 
+      or general feedback, we're listening and committed to improving your experience.
+    </p>
+  </div>
+
+  <div class="content-container">
+    
+    <!-- Feedback Form Section -->
+    <div class="content-section">
+      <h3>Share Your Experience</h3>
+      <form method="POST" action="{{ url_for('feedback') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="name" class="label-muted">Username</label>
+            <input type="text" id="name" name="name" value="{{ user_name }}" readonly>
+          </div>
+          
+          <div class="form-group">
+            <label for="email" class="label-muted">Email Address</label>
+            <input type="email" id="email" name="email" value="{{ user_email }}" readonly>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="type">Feedback Category</label>
+            <select id="type" name="type">
+              <option value="General Feedback">General Feedback</option>
+              <option value="Feature Suggestion">Feature Suggestion</option>
+              <option value="Bug Report">Bug Report</option>
+              <option value="Accuracy Concern">Accuracy Concern</option>
+              <option value="UI/UX Feedback">UI / UX Feedback</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="rating">Rating</label>
+            <select id="rating" name="rating">
+              <option value="⭐⭐⭐⭐⭐ Excellent">⭐⭐⭐⭐⭐ Excellent</option>
+              <option value="⭐⭐⭐⭐ Good">⭐⭐⭐⭐ Good</option>
+              <option value="⭐⭐⭐ Average">⭐⭐⭐ Average</option>
+              <option value="⭐⭐ Below Expectations">⭐⭐ Below Expectations</option>
+              <option value="⭐ Poor">⭐ Poor</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="message">Detailed Feedback</label>
+          <textarea
+            id="message"
+            name="message"
+            placeholder="Tell us what worked well, what could be better, or any suggestions you have..."
+          ></textarea>
+        </div>
+
+        <button type="submit" class="primary-button">Submit Your Feedback</button>
+
+        <div class="highlight-box">
+          <span class="highlight-icon">💡</span>
+          <p>Your feedback is confidential and used exclusively to improve HridyaCare. We never share personal data with third parties.</p>
+        </div>
+      </form>
+    </div>
+
+    <!-- Information Section -->
+    <div class="content-section info-section">
+      <h3>What Happens with Your Feedback?</h3>
+      <p>
+        Our team reviews every submission carefully. We prioritize high-impact issues and 
+        popular feature requests for our development roadmap. You're helping build a better 
+        wellness experience for everyone.
+      </p>
+    </div>
+
+    <div class="page-footer">
+      © 2025 HridyaCare • Wellness Through Community Feedback
+    </div>
+
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div id="toast" class="toast-success">
+    {{ messages[0][1] }}
+  </div>
+  {% endif %}
+{% endwith %}
+
+{% endblock %}

@@ -1,0 +1,513 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Physical Health Check | HridyaCare{% endblock %}
+
+{% block head %}
+<style>
+    /* --- THEME TOKENS --- */
+    :root {
+        --card-bg: rgba(30, 41, 59, 0.9); 
+        --inner-bg: rgba(15, 23, 42, 0.6); 
+        --primary: #f43f5e;
+        --tooltip-bg: #0f172a;
+    }
+
+    /* ANIMATIONS */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+    .health-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+        animation: fadeIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        padding-bottom: 5px;
+    }
+
+    /* --- MAIN CARD --- */
+    .health-card {
+        width: 100%;
+        background: var(--card-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      padding: 8px 35px 35px 35px; 
+        
+        border-radius: 24px;
+        border: 1px solid rgba(93, 43, 43, 0.08);
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+        margin-bottom: 15px;
+        position: relative;
+        z-index: 10;
+        transition: height 0.3s ease;
+        box-sizing: border-box;
+    }
+
+    #resultBox { padding: 25px 20px; margin-bottom: -50px; margin-top: 34px; }
+
+    h2 { font-size: 1.7rem; font-weight: 800; color: #fff; margin-bottom: 0.3rem; text-align: center; }
+    .subtitle { color: #94a3b8; font-size: 0.95rem; margin-top: 0; text-align: center; margin-bottom: 25px; }
+
+    /* --- INPUTS --- */
+    .input-label {
+        font-size: 0.75rem; color: #cbd5e1; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; 
+        margin-bottom: 12px; margin-left: 4px; display: block;
+    }
+
+    .health-input, .health-select {
+        width: 100%; 
+        padding: 16px; 
+        background: var(--inner-bg); 
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 14px; 
+        color: white; 
+        font-size: 1rem; 
+        outline: none; 
+        margin-bottom: 20px;
+        
+        /* FIX: Only animate border/shadow to prevent "flying" background image */
+        transition: border-color 0.2s, box-shadow 0.2s;
+        
+        appearance: none;
+        box-sizing: border-box;
+    }
+    
+    .health-input:focus, .health-select:focus {
+        border-color: var(--primary); 
+        background: rgba(15, 23, 42, 0.9);
+        box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.1);
+    }
+
+    /* --- LOADING STATE --- */
+    .loading-input {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cstyle%3E.spinner_ajPY%7Btransform-origin:center;animation:spinner_AtaB .75s infinite linear%7D@keyframes spinner_AtaB%7B100%25%7Btransform:rotate(360deg)%7D%7D%3C/style%3E%3Cpath d='M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z' opacity='.25' fill='%2394a3b8'/%3E%3Cpath d='M10.14,1.16a11,11,0,0,0-9,8.92A1.59,1.59,0,0,0,2.46,12,1.52,1.52,0,0,0,4.11,10.7a8,8,0,0,1,6.66-6.61A1.42,1.42,0,0,0,12,2.69h0A1.57,1.57,0,0,0,10.14,1.16Z' class='spinner_ajPY' fill='%23f43f5e'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 15px center;
+        background-size: 20px;
+        animation: pulse 1.5s infinite ease-in-out;
+    }
+
+    .loading-input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+        font-style: italic;
+    }
+
+    .select-wrapper { position: relative; }
+    .select-wrapper::after {
+        content: '▼'; position: absolute; right: 18px; top: 42%; transform: translateY(-50%);
+        color: #64748b; font-size: 0.7rem; pointer-events: none;
+    }
+
+    /* --- BUTTONS --- */
+    .btn-main {
+        background: linear-gradient(135deg, #f43f5e, #e11d48); color: white; border: none; 
+        padding: 18px; border-radius: 14px; font-size: 1.05rem; font-weight: 700; cursor: pointer;
+        width: 100%; box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);
+        transition: transform 0.2s; margin-top: 8px;
+    }
+    .btn-main:active { transform: scale(0.98); }
+
+    .btn-outline {
+        background: transparent !important; border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow: none !important; color: #94a3b8 !important; font-weight: 600; font-size: 0.9rem;
+        margin-top: 15px; width: 100%; padding: 14px; border-radius: 14px; cursor: pointer;
+        transition: 0.2s;
+    }
+    .btn-outline:hover { border-color: white !important; color: white !important; }
+
+    /* --- RESULT SECTION --- */
+    #resultBox { display: none; animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    .result-title {
+        color: white; font-size: 1.5rem; font-weight: 800; text-align: center;
+        margin-bottom: 20px; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    .metric-card {
+        width: 100%; box-sizing: border-box;
+        background: var(--inner-bg); backdrop-filter: blur(12px);
+        border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; 
+        padding: 22px 25px; margin-bottom: 15px;
+        display: flex; justify-content: space-between; align-items: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2); opacity: 0;
+        transform: translateY(15px); position: relative;
+    }
+    .metric-card::before {
+        content: ""; position: absolute; inset: 0; border-radius: 16px; padding: 1px;
+        background: linear-gradient(135deg, rgba(244,63,94,0.4), rgba(59,130,246,0.1));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
+    }
+
+    .metric-left { display: flex; flex-direction: column; gap: 5px; }
+    .metric-label { font-size: 0.7rem; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+    .metric-name { font-size: 1rem; color: #e2e8f0; font-weight: 600; }
+    .metric-badge {
+        display: inline-block; width: fit-content; padding: 4px 10px; border-radius: 6px;
+        font-size: 0.65rem; font-weight: 800; text-transform: uppercase; margin-top: 5px;
+    }
+
+    .metric-right { display: flex; align-items: center; gap: 12px; position: relative; }
+    .metric-number {
+        font-size: 2.2rem; font-weight: 800; color: white;
+        text-shadow: 0 0 15px rgba(255,255,255,0.1); min-width: 60px; text-align: right;
+    }
+
+    .info-wrapper { position: relative; display: flex; align-items: center; }
+    .metric-info-btn {
+        width: 26px; height: 26px; border-radius: 50%;
+        border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05);
+        color: #94a3b8; font-weight: 800; font-size: 12px;
+        display: flex; align-items: center; justify-content: center; cursor: help; 
+    }
+    .metric-info-btn:hover { background: #f43f5e; color: white; border-color: #f43f5e; }
+
+    .tooltip-box {
+        display: none; position: absolute; right: 34px; top: 50%; transform: translateY(-50%);
+        width: 180px; background: var(--tooltip-bg);
+        border: 1px solid rgba(255,255,255,0.15); padding: 12px;
+        border-radius: 10px; z-index: 100; box-shadow: 0 10px 25px rgba(0,0,0,0.8); pointer-events: none;
+    }
+    .info-wrapper:hover .tooltip-box { display: block; animation: fadeIn 0.2s; }
+    .tooltip-title { color: #f43f5e; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; display: block; }
+    .tooltip-text { color: #cbd5e1; font-size: 0.7rem; line-height: 1.4; margin: 0; }
+    .tooltip-box::after {
+        content: ""; position: absolute; top: 50%; right: -5px; margin-top: -5px;
+        border-width: 5px; border-style: solid; border-color: transparent transparent transparent var(--tooltip-bg);
+    }
+
+    .status-good { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+    .status-warn { background: rgba(245,158,11,0.1); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+    .status-bad  { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+
+    .metric-card.show { animation: slideMetric 0.4s forwards; }
+    @keyframes slideMetric { to { opacity: 1; transform: translateY(0); } }
+
+    #missingDataPopup > div { background: #1e293b; border: 1px solid rgba(255,255,255,0.15); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="health-container">
+    
+    <div class="health-card">
+        <h2>Physical Health</h2>
+        <p class="subtitle">Quick body metrics analysis.</p>
+
+        <label class="input-label">Select Profile</label>
+        <div class="select-wrapper">
+            <select id="profileSelect" class="health-select" onchange="fetchMemberDetails()">
+                <option value="" disabled selected>Loading...</option>
+            </select>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+            <div>
+                <label class="input-label">Age</label>
+                <input type="number" id="age" class="health-input loading-input" placeholder="Fetching..." disabled>
+            </div>
+            <div>
+                <label class="input-label">Weight (kg)</label>
+                <input type="number" id="weight" class="health-input loading-input" placeholder="Fetching..." disabled>
+            </div>
+        </div>
+
+        <div>
+            <label class="input-label">Height (cm)</label>
+            <input type="number" id="height" class="health-input loading-input" placeholder="Fetching..." disabled>
+        </div>
+
+        <button type="button" class="btn-main" onclick="calculateHealth()">
+            Analyze Now
+        </button>
+    </div>
+
+    <div class="health-card" id="resultBox">
+        <h3 class="result-title">Analysis Results</h3>
+
+        <div id="metricList">
+            <div class="metric-card animate-metric">
+                <div class="metric-left">
+                    <div class="metric-label">WASI SCORE</div>
+                    <div class="metric-name">Weight Stress</div>
+                    <div id="wasiBadge" class="metric-badge">--</div>
+                </div>
+                <div class="metric-right">
+                    <div id="wasiVal" class="metric-number">--</div>
+                    <div class="info-wrapper">
+                        <button class="metric-info-btn">i</button>
+                        <div class="tooltip-box">
+                            <span class="tooltip-title">Weight Stress</span>
+                            <p class="tooltip-text">Measures physical stress on your body relative to your age group.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card animate-metric">
+                <div class="metric-left">
+                    <div class="metric-label">MLS SCORE</div>
+                    <div class="metric-name">Metabolic Load</div>
+                    <div id="mlsBadge" class="metric-badge">--</div>
+                </div>
+                <div class="metric-right">
+                    <div id="mlsVal" class="metric-number">--</div>
+                    <div class="info-wrapper">
+                        <button class="metric-info-btn">i</button>
+                        <div class="tooltip-box">
+                            <span class="tooltip-title">Metabolic Load</span>
+                            <p class="tooltip-text">Estimates the energy strain required to maintain your current body mass.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card animate-metric">
+                <div class="metric-left">
+                    <div class="metric-label">BMI INDEX</div>
+                    <div class="metric-name">Body Mass Index</div>
+                    <div id="bmiBadge" class="metric-badge">--</div>
+                </div>
+                <div class="metric-right">
+                    <div id="bmiVal" class="metric-number">--</div>
+                    <div class="info-wrapper">
+                        <button class="metric-info-btn">i</button>
+                        <div class="tooltip-box">
+                            <span class="tooltip-title">BMI</span>
+                            <p class="tooltip-text">Standard screening for weight categories (Underweight, Healthy, Obese).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-outline" onclick="window.location.href='{{ url_for('index') }}'">
+            Back to Dashboard
+        </button>
+    </div>
+</div>
+
+<div id="missingDataPopup" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(5px); z-index:9999; align-items:center; justify-content:center;">
+  <div style="padding:25px; width:90%; max-width:350px; border-radius:20px;">
+    <div style="text-align:center; margin-bottom:15px;">
+        <h3 style="color:white; font-size:1.2rem; margin:0 0 5px 0;">Complete Profile</h3>
+        <p style="color:#94a3b8; font-size:0.85rem;">Please fill details for accurate results.</p>
+    </div>
+    <input type="number" id="popup-age" class="health-input" placeholder="Age" style="margin-bottom:8px;">
+    <input type="number" id="popup-weight" class="health-input" placeholder="Weight (kg)" style="margin-bottom:8px;">
+    <input type="number" id="popup-height" class="health-input" placeholder="Height (cm)" style="margin-bottom:8px;">
+    <button class="btn-main" onclick="saveMissingData()" style="margin-top:8px; padding:12px;">Save</button>
+    <button onclick="document.getElementById('missingDataPopup').style.display='none'" class="btn-outline" style="margin-top:8px; border:none; color:#64748b; padding:10px;">Cancel</button>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentMemberId = null;
+    
+    // Store original placeholders
+    const placeholders = {
+        age: "25",
+        weight: "70",
+        height: "175"
+    };
+
+    document.addEventListener("DOMContentLoaded", loadProfiles);
+
+    async function loadProfiles() {
+        try {
+            const res = await fetch('/api/family-members');
+            const members = await res.json();
+            const select = document.getElementById("profileSelect");
+
+            members.sort((a, b) => {
+                if (a.relationship.toLowerCase() === 'self') return -1;
+                if (b.relationship.toLowerCase() === 'self') return 1;
+                return 0;
+            });
+
+            members.forEach(m => {
+                const label = m.relationship.toLowerCase() === 'self' ? "You" : `${m.name}`;
+                select.innerHTML += `<option value="${m.id}">${label}</option>`;
+            });
+
+            if (members.length > 0) {
+                select.value = members[0].id;
+                fetchMemberDetails(); 
+            }
+        } catch (e) { console.error("Error loading profiles", e); }
+    }
+
+    // --- TOGGLE LOADING STATE FUNCTION ---
+    function toggleLoading(isLoading) {
+        const inputs = ['age', 'weight', 'height'];
+        
+        inputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (isLoading) {
+                el.value = ''; // Clear existing text
+                el.setAttribute('placeholder', 'Fetching...'); // Change placeholder
+                el.classList.add('loading-input'); // Add spinner and pulse style
+                el.disabled = true; // Prevent typing while fetching
+            } else {
+                el.classList.remove('loading-input'); // Remove style
+                el.setAttribute('placeholder', placeholders[id]); // Restore original placeholder
+                el.disabled = false; // Re-enable
+            }
+        });
+    }
+
+    async function fetchMemberDetails() {
+        const id = document.getElementById("profileSelect").value;
+        currentMemberId = id;
+        if (!id) return;
+
+        // 1. START LOADING ANIMATION
+        toggleLoading(true);
+        document.getElementById("resultBox").style.display = "none";
+        
+        // Clear popup fields
+        document.getElementById("popup-age").value = "";
+        document.getElementById("popup-weight").value = "";
+        document.getElementById("popup-height").value = "";
+
+        try {
+            const res = await fetch(`/api/member/${id}`);
+            const data = await res.json();
+
+            // 2. STOP LOADING ANIMATION
+            toggleLoading(false);
+
+            if (!data.age || !data.weight || !data.height) {
+                if (data.age) document.getElementById("popup-age").value = data.age;
+                if (data.weight) document.getElementById("popup-weight").value = data.weight;
+                if (data.height) document.getElementById("popup-height").value = data.height;
+                document.getElementById("missingDataPopup").style.display = "flex";
+            } else {
+                document.getElementById("age").value = data.age;
+                document.getElementById("weight").value = data.weight;
+                document.getElementById("height").value = data.height;
+            }
+        } catch (e) { 
+            console.error("Error fetching details", e); 
+            toggleLoading(false); 
+        }
+    }
+
+    async function saveMissingData() {
+        const age = document.getElementById("popup-age").value;
+        const weight = document.getElementById("popup-weight").value;
+        const height = document.getElementById("popup-height").value;
+
+        if (!age || !weight || !height) return alert("Fill all fields.");
+
+        try {
+            const res = await fetch("/api/member/update-medical", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    member_id: currentMemberId,
+                    age: parseInt(age),
+                    weight: parseFloat(weight),
+                    height: parseFloat(height)
+                })
+            });
+            const result = await res.json();
+            if(!result.success) return alert("Error saving data");
+
+            document.getElementById("age").value = age;
+            document.getElementById("weight").value = weight;
+            document.getElementById("height").value = height;
+            document.getElementById("missingDataPopup").style.display = "none";
+
+        } catch(e) { console.error(e); }
+    }
+
+    async function calculateHealth() {
+        const age = document.getElementById("age").value;
+        const weight = document.getElementById("weight").value;
+        const height = document.getElementById("height").value;
+
+        if (!age || !weight || !height) {
+            alert("Please enter valid details.");
+            return;
+        }
+
+        if (currentMemberId) {
+            fetch("/api/member/update-medical", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    member_id: currentMemberId,
+                    age: parseInt(age),
+                    weight: parseFloat(weight),
+                    height: parseFloat(height)
+                })
+            }).catch(e => console.log("Bg save failed"));
+        }
+
+        const res = await fetch("/api/physical-health", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ age: Number(age), weight: Number(weight), height: Number(height) })
+        });
+
+        const data = await res.json();
+        const hM = height / 100;
+        const bmi = (weight / (hM * hM)).toFixed(1);
+
+        animateValue("wasiVal", 0, data.wasi);
+        animateValue("mlsVal", 0, data.mls);
+        animateValue("bmiVal", 0, bmi);
+
+        setBadge("wasi", data.wasi, [70, 85]);
+        setBadge("mls", data.mls, [100, 120]);
+        setBadge("bmi", bmi, [18.5, 25, 30]);
+
+        document.getElementById("resultBox").style.display = "block";
+
+        document.querySelectorAll(".metric-card").forEach((card, i) => {
+            card.classList.remove("show");
+            setTimeout(() => card.classList.add("show"), i * 150);
+        });
+        
+        setTimeout(() => {
+             document.getElementById("resultBox").scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    }
+
+    function animateValue(id, start, end, duration = 800) {
+        let startTime = null;
+        function step(timestamp) {
+            if (!startTime) startTime = timestamp;
+            let progress = Math.min((timestamp - startTime) / duration, 1);
+            let value = start + (end - start) * progress;
+            document.getElementById(id).innerText = 
+                Number.isInteger(parseFloat(end)) ? value.toFixed(0) : value.toFixed(1);
+            if (progress < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }
+
+    function setBadge(id, val, limits) {
+        const el = document.getElementById(id + "Badge");
+        val = parseFloat(val);
+
+        if (id === 'bmi') {
+            if (val < limits[0]) { el.innerText = "Underweight"; el.className = "metric-badge status-warn"; }
+            else if (val < limits[1]) { el.innerText = "Normal"; el.className = "metric-badge status-good"; }
+            else if (val < limits[2]) { el.innerText = "Overweight"; el.className = "metric-badge status-warn"; }
+            else { el.innerText = "Obese"; el.className = "metric-badge status-bad"; }
+        } 
+        else {
+            if (val <= limits[0]) { el.innerText = "Good"; el.className = "metric-badge status-good"; }
+            else if (val <= limits[1]) { el.innerText = "Moderate"; el.className = "metric-badge status-warn"; }
+            else { el.innerText = "High"; el.className = "metric-badge status-bad"; }
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,692 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Lifestyle Analysis | CardioSense{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* ================= TYPOGRAPHY & GLOBAL ================= */
+    * { font-family: "Outfit", "Segoe UI", system-ui, sans-serif; box-sizing: border-box; }
+
+    html, body { overflow-x: hidden; width: 100%; margin: 0; padding: 0; }
+
+    /* Override base styles if necessary for transparent headers */
+    nav, .navbar, header, .app-header {
+        background: transparent !important; box-shadow: none !important; border-bottom: none !important;
+        z-index: 10; position: relative;
+    }
+
+    body {
+        background-color: #0b1121 !important;
+        background-image: radial-gradient(at 50% 0%, #1e293b 0%, #0b1121 70%) !important;
+        background-attachment: fixed;
+        color: #f1f5f9;
+    }
+
+    :root {
+        --bg-main: #0b1121;
+        --card-bg: rgba(30, 41, 59, 0.6);
+        --card-border: rgba(255, 255, 255, 0.08);
+        --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        --primary: #ff2d55;
+        --primary-glow: rgba(255, 45, 85, 0.4);
+        --text-main: #f1f5f9;
+        --text-muted: #94a3b8;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+    }
+
+    .assessment-wrapper {
+        color: var(--text-main); line-height: 1.6; min-height: 100vh;
+        position: absolute; top: 0; left: 0; width: 100vw; 
+        margin-left: calc(50% - 50vw); padding-bottom: 80px; z-index: 0;
+    }
+
+    .bg-blur {
+        position: fixed; top: -150px; left: 50%; transform: translateX(-50%);
+        width: 80%; height: 500px; background: var(--primary); opacity: 0.08;
+        filter: blur(120px); z-index: -1; pointer-events: none;
+    }
+
+    .container {
+        max-width: 700px; margin: auto; padding: 120px 20px 40px;
+        position: relative; z-index: 1;
+    }
+
+    h1 { 
+        margin: 0 0 10px 0; font-size: 32px; text-align: center; 
+        letter-spacing: -1px; font-weight: 800; 
+        background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .subtitle { color: var(--text-muted); margin-bottom: 40px; text-align: center; font-size: 16px; font-weight: 400; }
+
+    /* ================= STEP CONTAINERS ================= */
+    .step-container { display: none; flex-direction: column; width: 100%; opacity: 0; transition: opacity 0.4s ease-out; }
+    .step-container.active { display: flex; opacity: 1; }
+
+    /* ================= UI ELEMENTS ================= */
+    .card {
+        background: var(--card-bg); border: 1px solid var(--card-border);
+        backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+        border-radius: 24px; padding: 32px; margin-bottom: 24px;
+        box-shadow: var(--card-shadow); transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    /* Form Inputs */
+    .input-group { margin-bottom: 24px; }
+    label { display: flex; margin-bottom: 12px; font-size: 0.95rem; font-weight: 600; color: #e2e8f0; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    label .lucide { color: var(--primary); width: 18px; height: 18px; }
+
+    input, select {
+        width: 100%; padding: 18px; border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.08); background: rgba(15, 23, 42, 0.4);
+        color: white; font-size: 1rem; transition: all 0.2s; appearance: none;
+    }
+    input:focus, select:focus { 
+        outline: none; border-color: var(--primary); 
+        background: rgba(15, 23, 42, 0.8); 
+        box-shadow: 0 0 0 4px rgba(255, 45, 85, 0.1); 
+    }
+
+    /* Time Inputs Grid */
+    .meal-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .time-box {
+        background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px; padding: 15px; text-align: center; position: relative; cursor: pointer; transition: 0.2s;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100px;
+    }
+    .time-box:hover { background: rgba(255,255,255,0.06); border-color: var(--primary); transform: translateY(-2px); }
+    .time-icon-wrapper { margin-bottom: 8px; color: var(--text-muted); }
+    .time-label { font-size: 0.75rem; font-weight: 700; color: #e2e8f0; display: block; }
+    .time-value { font-size: 0.85rem; color: var(--primary); font-weight: 600; margin-top: 4px; display: block; min-height: 1rem;}
+    .time-box input { position: absolute; inset: 0; opacity: 0; cursor: pointer; height: 100%; width: 100%; }
+
+    /* Buttons */
+    .btn-primary {
+        background: linear-gradient(135deg, #ff2d55 0%, #e11d48 100%); color: white;
+        padding: 18px; border-radius: 16px; font-size: 16px; font-weight: 700; border: none;
+        width: 100%; cursor: pointer; margin-top: 10px; 
+        box-shadow: 0 8px 20px -6px rgba(244, 63, 94, 0.5);
+        transition: all 0.3s ease; letter-spacing: 0.5px;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px -8px rgba(244, 63, 94, 0.7); }
+    
+    .btn-outline, .back-btn {
+        background: transparent; color: var(--text-muted); padding: 16px; border-radius: 16px;
+        border: 1px solid var(--card-border); font-size: 15px; width: 100%; margin-top: 16px;
+        cursor: pointer; transition: all 0.3s ease; font-weight: 600; text-align: center;
+    }
+    .back-btn { border: none; margin-top: 30px; font-size: 0.9rem; }
+    .btn-outline:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,0.05); }
+    .back-btn:hover { color: #f8fafc; }
+
+    /* ================= MEMBER CARDS ================= */
+    #family-list { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
+    
+    .member-card {
+        display: flex; align-items: center; padding: 18px 24px;
+        background: rgba(30, 41, 59, 0.4); 
+        border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 20px;
+        cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden;
+    }
+    .member-card:hover {
+        background: rgba(30, 41, 59, 0.8); border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+    .member-card.is-self {
+        background: linear-gradient(90deg, rgba(244, 63, 94, 0.08), transparent);
+        border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    .member-avatar {
+        width: 50px; height: 50px; border-radius: 50%; background: #0f172a;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px; margin-right: 20px; color: #cbd5e1;
+        border: 2px solid rgba(255,255,255,0.05); flex-shrink: 0;
+    }
+    .member-card.is-self .member-avatar {
+        background: linear-gradient(135deg, #f43f5e, #e11d48); color: white;
+        border-color: transparent; box-shadow: 0 0 20px rgba(244, 63, 94, 0.4);
+    }
+
+    .member-info { flex: 1; display: flex; flex-direction: column; }
+    .member-name { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 2px; }
+    .member-relation { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    
+    .delete-btn {
+        width: 36px; height: 36px; border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex; align-items: center; justify-content: center; cursor: pointer;
+        transition: all 0.2s ease; color: #64748b;
+    }
+    .delete-btn:hover { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #ef4444; }
+
+    /* ================= RESULT SECTION ================= */
+    .result-header { text-align: center; margin-bottom: 30px; }
+    
+    .score-circle {
+        width: 160px; height: 160px; border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), transparent);
+        border: 1px solid rgba(255,255,255,0.1);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        margin: 0 auto 20px; position: relative;
+        box-shadow: 0 0 30px rgba(0,0,0,0.2);
+    }
+    .score-val { font-size: 64px; font-weight: 800; line-height: 1; color: white; letter-spacing: -2px; }
+    .score-max { font-size: 14px; color: var(--text-muted); margin-top: 5px; }
+    
+    .score-label { 
+        font-size: 20px; font-weight: 700; margin-bottom: 5px;
+        background: linear-gradient(90deg, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    /* Colors for scores */
+    .score-val.good { color: var(--success); text-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
+    .score-val.avg { color: var(--warning); text-shadow: 0 0 20px rgba(245, 158, 11, 0.4); }
+    .score-val.bad { color: var(--danger); text-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+
+    .breakdown-grid {
+        display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 30px;
+    }
+    
+    .metric-card {
+        background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 12px;
+        transition: transform 0.2s;
+    }
+    .metric-card:hover { background: rgba(15, 23, 42, 0.8); }
+
+    .metric-top { display: flex; justify-content: space-between; align-items: center; }
+    .metric-title { font-size: 15px; font-weight: 600; color: #e2e8f0; display: flex; align-items: center; gap: 8px; }
+    .metric-val { font-weight: 700; font-size: 15px; }
+
+    .metric-bar-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; }
+    .metric-bar-fill { height: 100%; border-radius: 10px; transition: width 1s ease; }
+
+    .who-insight {
+        font-size: 13px; color: #94a3b8; line-height: 1.5;
+        padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05);
+        display: flex; gap: 8px;
+    }
+    .who-insight .lucide { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; color: var(--primary); }
+
+    /* Chart Container */
+    .chart-box {
+        position: relative; height: 300px; width: 100%; margin: 30px 0;
+    }
+
+    /* Spinner */
+    .spinner {
+        width: 40px; height: 40px; border: 4px solid rgba(255, 255, 255, 0.1);
+        border-left-color: #f43f5e; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px auto;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+
+<div class="assessment-wrapper">
+    <div class="bg-blur"></div>
+
+    <div class="container">
+        
+        <input type="hidden" id="selected-member-id">
+
+        <div id="step-family" class="step-container active">
+            <h1>Lifestyle Analysis</h1>
+            <p class="subtitle">Select a profile to start the WHO-based assessment.</p>
+            
+            <div id="family-list">
+                <div style="text-align:center; padding:40px 0;">
+                    <div class="spinner"></div>
+                    <p style="color:#64748b; margin:0;">Loading profiles...</p>
+                </div>
+            </div>
+
+            <button id="btn-show-add-member" class="btn-outline" style="border-style: dashed; opacity: 0.7;" onclick="showAddMemberForm()">
+                + Add New Member
+            </button>
+
+            <div id="add-member-form" class="card" style="display:none; margin-top: 10px;">
+                <h3 style="color:white; font-size:1.1rem; margin:0 0 20px 0; text-align:center;">New Profile</h3>
+                
+                <label>Name</label>
+                <input type="text" id="new-member-name" placeholder="e.g. Rajesh" autocomplete="off" style="margin-bottom: 20px;">
+                
+                <label>Relationship</label>
+                <select id="new-member-relation">
+                    <option value="" disabled selected>Select Relationship</option>
+                    <option value="Father">Father</option>
+                    <option value="Mother">Mother</option>
+                    <option value="Wife">Wife</option>
+                    <option value="Husband">Husband</option>
+                    <option value="Sibling">Sibling</option>
+                    <option value="Child">Child</option>
+                    <option value="Other">Other</option>
+                </select>
+
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="btn-outline" style="margin-top:0;" onclick="hideAddMemberForm()">Cancel</button>
+                    <button class="btn-primary" style="margin-top:0;" onclick="saveNewMember()">Save</button>
+                </div>
+            </div>
+            
+            <button class="back-btn" onclick="window.location.href='{{ url_for('index') }}'">← Back to Dashboard</button>
+        </div>
+
+        <div id="step-form" class="step-container">
+            <h1>Daily Habits</h1>
+            <p class="subtitle" id="form-subtitle">Enter details for Analysis</p>
+
+            <form id="lifeForm" class="card">
+                
+                <div class="input-group">
+                    <label><i data-lucide="scale"></i> Weight (kg)</label>
+                    <input type="number" id="weight" placeholder="Fetching..." step="0.1" required>
+                </div>
+
+                <div class="input-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                      <div>
+                        <label><i data-lucide="droplets"></i> Water (L)</label>
+                        <input type="number" id="water" placeholder="e.g. 2.5" step="0.1" required>
+                      </div>
+                      <div>
+                        <label><i data-lucide="moon"></i> Sleep (Hrs)</label>
+                        <input type="number" id="sleep" placeholder="e.g. 7.5" step="0.1" required>
+                      </div>
+                </div>
+
+                <div class="input-group">
+                    <label><i data-lucide="activity"></i> Physical Activity (Daily)</label>
+                    <div style="display: flex; gap: 15px;">
+                        <input type="number" id="activityHours" placeholder="Hours" min="0">
+                        <input type="number" id="activityMinutes" placeholder="Minutes" min="0" max="59">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label><i data-lucide="utensils"></i> Meal Timing</label>
+                    <div class="meal-grid">
+                        <div class="time-box">
+                            <div class="time-icon-wrapper"><i data-lucide="sunrise"></i></div>
+                            <span class="time-label">Breakfast</span>
+                            <span class="time-value" id="lbl-breakfast">--:--</span>
+                            <input type="time" id="breakfast" onchange="updateTimeLabel(this, 'lbl-breakfast')">
+                        </div>
+                        <div class="time-box">
+                            <div class="time-icon-wrapper"><i data-lucide="sun"></i></div>
+                            <span class="time-label">Lunch</span>
+                            <span class="time-value" id="lbl-lunch">--:--</span>
+                            <input type="time" id="lunch" onchange="updateTimeLabel(this, 'lbl-lunch')">
+                        </div>
+                        <div class="time-box">
+                            <div class="time-icon-wrapper"><i data-lucide="sunset"></i></div>
+                            <span class="time-label">Dinner</span>
+                            <span class="time-value" id="lbl-dinner">--:--</span>
+                            <input type="time" id="dinner" onchange="updateTimeLabel(this, 'lbl-dinner')">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label><i data-lucide="clock"></i> Regularity</label>
+                    <select id="mealRegularity" required>
+                        <option value="regular">Daily on time</option>
+                        <option value="sometimes">Sometimes late</option>
+                        <option value="irregular">Irregular</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label><i data-lucide="cigarette"></i> Habits</label>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                        <select id="smoking" required>
+                            <option value="no">No Smoking</option>
+                            <option value="occasional">Occasional</option>
+                            <option value="regular">Regular</option>
+                        </select>
+                        <select id="alcohol" required>
+                            <option value="no">No Alcohol</option>
+                            <option value="occasional">Occasional</option>
+                            <option value="regular">Regular</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn-primary" type="submit">
+                    Calculate Score
+                </button>
+                <button type="button" class="btn-outline" style="border:none;" onclick="goToStep('step-family')">Change Profile</button>
+            </form>
+        </div>
+
+        <div id="step-result" class="step-container">
+            <div class="card result">
+                <div class="result-header">
+                    <div class="score-circle">
+                        <div id="finalScore" class="score-val">0</div>
+                        <div class="score-max">/ 100</div>
+                    </div>
+                    <div id="scoreText" class="score-label">Evaluating...</div>
+                    <p style="font-size:14px; color:var(--text-muted); margin:0;">Based on WHO Lifestyle Guidelines</p>
+                </div>
+
+                <div class="chart-box">
+                    <canvas id="lifestyleChart"></canvas>
+                </div>
+
+                <div id="insightsBox" class="breakdown-grid">
+                    </div>
+
+                <button class="btn-outline" onclick="location.reload()">Start New Analysis</button>
+                <button class="btn-primary" onclick="window.location.href='{{ url_for('index') }}'">Back to Dashboard</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    lucide.createIcons();
+
+    /* ================= 1. NAVIGATION & MEMBER LOADING ================= */
+    
+    function goToStep(stepId) {
+        document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
+        document.getElementById(stepId).classList.add('active');
+        
+        // SCROLL FIX: Ensure we scroll to top instantly
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        history.pushState({ step: stepId }, "", "#" + stepId);
+    }
+
+    window.onpopstate = function(event) {
+        if (!event.state) { goToStep("step-family"); return; }
+        if (event.state.step) goToStep(event.state.step);
+    };
+
+    document.addEventListener("DOMContentLoaded", loadMembers);
+
+    async function loadMembers() {
+        const list = document.getElementById("family-list");
+        list.innerHTML = `<div style="text-align:center; padding:40px 0;"><div class="spinner"></div><p style="color:#64748b; margin:0;">Loading profiles...</p></div>`;
+
+        try {
+            const res = await fetch('/api/family-members');
+            const members = await res.json();
+            
+            list.innerHTML = "";
+            if (!members || members.length === 0) {
+                list.innerHTML = `<p style="grid-column:1/-1; text-align:center;">No profiles found.</p>`;
+                return;
+            }
+
+            members.sort((a,b) => {
+                if(a.relationship.toLowerCase() === 'self') return -1;
+                if(b.relationship.toLowerCase() === 'self') return 1;
+                return 0;
+            });
+
+            members.forEach((m) => {
+                const isSelf = m.relationship.toLowerCase() === 'self';
+                const displayName = isSelf ? "You (Self)" : m.name;
+                
+                const div = document.createElement("div");
+                div.className = `member-card ${isSelf ? 'is-self' : ''}`;
+                
+                div.onclick = (e) => {
+                    if (e.target.closest('.delete-btn')) return;
+                    selectMember(m);
+                };
+
+                const avatar = `<div class="member-avatar"><span>${isSelf ? '❤️' : m.name.charAt(0).toUpperCase()}</span></div>`;
+                const deleteBtn = isSelf ? '' : `
+                    <div class="delete-btn" onclick="deleteMember(${m.id}, '${m.name}')">
+                        <i data-lucide="trash-2" style="width:16px; height:16px;"></i>
+                    </div>`;
+
+                div.innerHTML = `
+                    ${avatar}
+                    <div class="member-info">
+                        <div class="member-name">${displayName}</div>
+                        <div class="member-relation">${isSelf ? m.name : m.relationship}</div>
+                    </div>
+                    ${deleteBtn}
+                `;
+                list.appendChild(div);
+            });
+            lucide.createIcons(); // Re-init icons for new elements
+        } catch(e) { console.error("Error loading members", e); }
+    }
+
+    async function selectMember(member) {
+        document.getElementById("selected-member-id").value = member.id;
+        document.getElementById("form-subtitle").innerText = `Analyzing for ${member.name}`;
+        
+        const wInput = document.getElementById("weight");
+        wInput.value = "";
+        wInput.placeholder = "Fetching...";
+        
+        try {
+            const res = await fetch(`/api/member/${member.id}`);
+            if(res.ok) {
+                const data = await res.json();
+                if(data.weight) wInput.value = data.weight;
+                else wInput.placeholder = "e.g. 70";
+            }
+        } catch(e) { wInput.placeholder = "e.g. 70"; }
+
+        goToStep('step-form');
+    }
+
+    /* ================= MEMBER MANAGEMENT ================= */
+    function showAddMemberForm() { 
+        document.getElementById("family-list").style.display = "none"; 
+        document.getElementById("btn-show-add-member").style.display = "none"; 
+        document.getElementById("add-member-form").style.display = "block"; 
+    }
+
+    function hideAddMemberForm() { 
+        document.getElementById("add-member-form").style.display = "none"; 
+        document.getElementById("family-list").style.display = "flex"; 
+        document.getElementById("btn-show-add-member").style.display = "block"; 
+    }
+
+    async function saveNewMember() {
+        const name = document.getElementById("new-member-name").value;
+        const relation = document.getElementById("new-member-relation").value;
+        if (!name || !relation) return alert("Please fill all fields");
+        
+        try {
+            await fetch('/api/family-members/add', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ name, relationship: relation }) 
+            });
+            hideAddMemberForm(); 
+            loadMembers();
+        } catch(e) { alert("Failed to save member"); }
+    }
+
+    async function deleteMember(id, name) {
+        if(confirm("Remove " + name + "?")) {
+            await fetch(`/api/family-members/delete/${id}`, { method: 'DELETE' });
+            loadMembers();
+        }
+    }
+
+    function updateTimeLabel(input, lblId) {
+        document.getElementById(lblId).innerText = input.value || "--:--";
+        document.getElementById(lblId).style.color = "#ff2d55"; 
+    }
+
+    /* ================= 2. CALCULATION & RESULTS ================= */
+    document.getElementById("lifeForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        
+        // 1. Get Values
+        const weight = parseFloat(document.getElementById("weight").value) || 70;
+        const water = parseFloat(document.getElementById("water").value) || 0;
+        const sleep = parseFloat(document.getElementById("sleep").value) || 0;
+        const actHrs = parseFloat(document.getElementById("activityHours").value) || 0;
+        const actMins = parseFloat(document.getElementById("activityMinutes").value) || 0;
+        const mealReg = document.getElementById("mealRegularity").value;
+        const smoking = document.getElementById("smoking").value;
+        const alcohol = document.getElementById("alcohol").value;
+
+        // Convert to Weekly Mins for WHO comparison
+        const dailyActivityMins = (actHrs * 60) + actMins;
+        const weeklyActivityMins = dailyActivityMins * 7; 
+
+        // 2. Scoring Logic (WHO Aligned)
+        const targetWater = weight * 0.035; 
+        let hydroScore = (water / targetWater) * 100;
+        if(hydroScore > 100) hydroScore = 100;
+
+        let sleepScore = 0;
+        if(sleep >= 7 && sleep <= 9) sleepScore = 100;
+        else if(sleep >= 6) sleepScore = 80;
+        else if(sleep >= 5) sleepScore = 50;
+        else sleepScore = 30;
+
+        // WHO Standard: 150-300 mins moderate activity/week
+        let actScore = 0;
+        if(weeklyActivityMins >= 300) actScore = 100;
+        else if(weeklyActivityMins >= 150) actScore = 80;
+        else if(weeklyActivityMins >= 75) actScore = 50; 
+        else actScore = 20;
+
+        let nutScore = 100;
+        if(mealReg === 'sometimes') nutScore = 70;
+        if(mealReg === 'irregular') nutScore = 40;
+        if(smoking !== 'no') nutScore -= 30; 
+        if(alcohol !== 'no') nutScore -= 20; 
+        if(nutScore < 0) nutScore = 0;
+
+        const finalScore = Math.round((sleepScore * 0.35) + (hydroScore * 0.25) + (actScore * 0.20) + (nutScore * 0.20));
+
+        // 3. Render Results
+        const scoreEl = document.getElementById("finalScore");
+        const textEl = document.getElementById("scoreText");
+        
+        scoreEl.innerText = finalScore;
+        
+        // Remove old classes
+        scoreEl.classList.remove('good', 'avg', 'bad');
+        
+        let scoreState = "bad"; 
+        let summary = "Needs Improvement";
+
+        if(finalScore >= 80) { scoreState = "good"; summary = "Excellent Lifestyle"; } 
+        else if(finalScore >= 50) { scoreState = "avg"; summary = "Moderate Lifestyle"; }
+
+        scoreEl.classList.add(scoreState);
+        textEl.innerText = summary;
+
+        // Insights Generation
+        const box = document.getElementById("insightsBox");
+        
+        const getMetricCard = (label, icon, val, max, unit, type) => {
+            const pct = (val / max) * 100;
+            let barColor = pct >= 80 ? "#10b981" : pct >= 50 ? "#f59e0b" : "#ef4444";
+            
+            let tipText = "";
+            
+            // WHO-Based Logic
+            if(type === 'act') {
+                if(weeklyActivityMins < 150) tipText = "WHO recommends at least 150–300 mins of moderate aerobic activity per week for adults.";
+                else tipText = "You meet the WHO recommended activity levels. Great for cardiovascular health!";
+            } else if (type === 'sleep') {
+                if(val < 80) tipText = "Aim for 7-9 hours. Sleep deficiency is linked to higher cardiovascular risk.";
+                else tipText = "Optimal sleep duration achieved.";
+            } else if (type === 'nut') {
+                if(smoking !== 'no') tipText = "WHO states there is no safe level of tobacco use. Quitting significantly lowers heart disease risk.";
+                else if(alcohol !== 'no') tipText = "Limit alcohol. WHO guidelines suggest reducing intake to minimize health risks.";
+                else if(mealReg !== 'regular') tipText = "Irregular eating can disrupt metabolic health.";
+                else tipText = "Good habits! Ensure salt intake is <5g per day as per WHO guidelines.";
+            } else {
+                if(val < 100) tipText = `Target: ${targetWater.toFixed(1)}L/day for your weight category.`;
+                else tipText = "Hydration levels are optimal.";
+            }
+
+            return `
+            <div class="metric-card">
+                <div class="metric-top">
+                    <div class="metric-title"><i data-lucide="${icon}" style="width:16px; color:${barColor}"></i> ${label}</div>
+                    <div class="metric-val" style="color:${barColor}">${Math.round(val)}${unit}</div>
+                </div>
+                <div class="metric-bar-bg">
+                    <div class="metric-bar-fill" style="width:${pct}%; background:${barColor}; box-shadow:0 0 10px ${barColor};"></div>
+                </div>
+                <div class="who-insight">
+                    <i data-lucide="info"></i>
+                    <span>${tipText}</span>
+                </div>
+            </div>`;
+        };
+
+        box.innerHTML = `
+            ${getMetricCard("Sleep Quality", "moon", sleepScore, 100, "%", 'sleep')}
+            ${getMetricCard("Hydration", "droplets", hydroScore, 100, "%", 'hydro')}
+            ${getMetricCard("Physical Activity", "activity", actScore, 100, "%", 'act')}
+            ${getMetricCard("Nutrition & Habits", "utensils", nutScore, 100, "%", 'nut')}
+        `;
+
+        lucide.createIcons();
+        
+        // IMPORTANT: Switch step THEN scroll to top explicitly
+        goToStep('step-result');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        renderChart(hydroScore, sleepScore, actScore, nutScore);
+    });
+
+    /* ================= 3. CHART JS ================= */
+    let chartInstance = null;
+    function renderChart(w, s, a, n) {
+        const ctx = document.getElementById('lifestyleChart').getContext('2d');
+        if(chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Hydration', 'Sleep', 'Activity', 'Nutrition'],
+                datasets: [{
+                    label: 'Score',
+                    data: [w, s, a, n],
+                    backgroundColor: 'rgba(255, 45, 85, 0.2)',
+                    borderColor: '#ff2d55',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#ff2d55',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        beginAtZero: true, max: 100,
+                        ticks: { display: false },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        angleLines: { color: 'rgba(255,255,255,0.05)' },
+                        pointLabels: { color: '#94a3b8', font: {size: 11, family:'Outfit'} }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heart Healthy Diet | HridyaCare</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+    :root { --bg:#0b1120; --text:#e2e8f0; --accent:#22c55e; --glass:rgba(15,23,42,0.85); --card-bg: #1e293b; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:'Lato',sans-serif; line-height:1.6; }
+    
+    .nav { position:fixed; top:0; width:100%; padding:15px; background:var(--glass); backdrop-filter:blur(10px); z-index:10; border-bottom:1px solid rgba(255,255,255,0.1); box-sizing: border-box; }
+    .back { color:#fff; text-decoration:none; font-weight:700; text-transform:uppercase; font-size:14px; display: flex; align-items: center; gap: 5px; }
+    
+    .hero { height:350px; background: url('https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1600&q=80') center/cover; position: relative; }
+    .hero::after { content:''; position:absolute; bottom:0; width:100%; height:100px; background: linear-gradient(to top, var(--bg), transparent); }
+
+    .content { max-width:700px; margin:-100px auto 0; padding:24px; position:relative; z-index: 2; }
+    
+    h1 { font-family:'Playfair Display',serif; font-size:36px; color:#fff; text-shadow:0 5px 20px #000; margin-bottom:10px; line-height: 1.1; }
+    h2 { font-family:'Playfair Display',serif; color: #fff; margin-top: 40px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+    
+    p { margin-bottom:20px; font-size:18px; color:#cbd5f5; }
+    
+    .food-card { background: var(--card-bg); padding:15px; border-radius:12px; margin-bottom:15px; display:flex; align-items:center; gap:15px; border: 1px solid rgba(255,255,255,0.05); }
+    .icon { font-size:24px; background: rgba(255,255,255,0.1); width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 50%; flex-shrink: 0; }
+
+    /* Warning / Avoid Box */
+    .danger-box { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 20px; border-radius: 12px; margin-top: 30px; }
+    .danger-title { color: #f87171; font-weight: bold; margin-bottom: 10px; display: block; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; }
+
+    .highlight { border-left:4px solid var(--accent); padding-left:15px; font-style:italic; background:rgba(34, 197, 94, 0.1); padding:15px; border-radius:0 10px 10px 0; margin: 30px 0; }
+
+</style>
+</head>
+<body>
+
+<div class="nav">
+    <a href="../heart.html" class="back">← Back to Hub</a>
+</div>
+
+<div class="hero"></div>
+
+<div class="content">
+    <div style="color:var(--accent); font-weight:700; text-transform:uppercase; font-size:12px; margin-bottom:10px;">Nutrition Guide</div>
+    <h1>Best Foods for Heart Health</h1>
+    
+    <p>What you eat has a direct impact on your blood pressure, cholesterol, and overall heart resilience. A heart-healthy diet is not about strict limitations, but about prioritizing nutrient-dense fuel.</p>
+    
+    <div class="highlight">
+        <strong>Pro Tip:</strong> Aim to fill half your plate with vegetables and fruits at every meal.
+    </div>
+
+    <h2>The "Big 4" for Your Heart</h2>
+
+    <div class="food-card">
+        <div class="icon">🥜</div>
+        <div>
+            <strong>Walnuts & Almonds</strong><br>
+            <span style="font-size:14px; color:#94a3b8;">Rich in Omega-3 fatty acids and healthy fats that actively lower "bad" (LDL) cholesterol.</span>
+        </div>
+    </div>
+
+    <div class="food-card">
+        <div class="icon">🫐</div>
+        <div>
+            <strong>Berries</strong><br>
+            <span style="font-size:14px; color:#94a3b8;">Strawberries and blueberries are packed with antioxidants (anthocyanins) that protect artery walls.</span>
+        </div>
+    </div>
+
+    <div class="food-card">
+        <div class="icon">🐟</div>
+        <div>
+            <strong>Fatty Fish</strong><br>
+            <span style="font-size:14px; color:#94a3b8;">Salmon, mackerel, and tuna are loaded with Omega-3s to reduce triglycerides and inflammation.</span>
+        </div>
+    </div>
+
+    <div class="food-card">
+        <div class="icon">🥦</div>
+        <div>
+            <strong>Leafy Greens</strong><br>
+            <span style="font-size:14px; color:#94a3b8;">Spinach and kale contain Vitamin K, which helps protect your arteries and promotes proper blood clotting.</span>
+        </div>
+    </div>
+
+    <h2>Foods to Limit (The "Red" List)</h2>
+    <div class="danger-box">
+        <span class="danger-title">⚠️ Limit Intake Of:</span>
+        <ul style="margin: 0; padding-left: 20px; color: #fca5a5; font-size: 15px;">
+            <li style="margin-bottom: 8px;"><strong>Sodium:</strong> Excess salt raises blood pressure. Aim for under 2,300mg/day.</li>
+            <li style="margin-bottom: 8px;"><strong>Trans Fats:</strong> Found in fried foods and baked goods; they raise bad cholesterol.</li>
+            <li><strong>Processed Sugars:</strong> High sugar intake is linked to chronic inflammation and heart disease.</li>
+        </ul>
+    </div>
+    
+    <div style="margin-top: 40px; text-align: center;">
+        <a href="all-articles.html" style="color: var(--text); opacity: 0.7; text-decoration: none; font-size: 14px;">Return to Library</a>
+    </div>
+
+</div>
+
+</body>
+</html>

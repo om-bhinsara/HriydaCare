@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Health Hub | HridyaCare</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ================= GLOBAL STYLES ================= */
+        * {
+            font-family: "Outfit", "Segoe UI", system-ui, sans-serif;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: #0f172a !important;
+            background-image: linear-gradient(180deg, #0f172a 0%, #1e293b 100%) !important;
+            background-attachment: fixed;
+            color: #f1f5f9;
+            min-height: 100vh;
+        }
+
+        :root {
+            --bg-main: #0f172a;
+            --card-bg: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8));
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            --primary: #ff2d55;
+            --primary-hover: #ff4769;
+            --primary-glow: rgba(255, 45, 85, 0.5);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: #ef4444;
+            --outline: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ================= LAYOUT WRAPPER ================= */
+        .heart-hub-wrapper {
+            color: var(--text-main);
+            line-height: 1.6;
+            background: var(--bg-main);
+            min-height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            margin-left: calc(50% - 50vw);
+            padding-bottom: 50px;
+            z-index: 0;
+        }
+
+        .heart-bg-blur {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 400px;
+            background: var(--primary);
+            opacity: 0.04;
+            filter: blur(80px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 60px 20px 100px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ================= HEADER ================= */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 90;
+            padding: 20px 20px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid transparent;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .back-btn:hover {
+            color: #fff;
+            border-color: var(--outline);
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(-2px);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            flex: 1;
+        }
+
+        /* ================= HERO CARD ================= */
+        .hero-card {
+            background: linear-gradient(135deg, var(--primary), #d91b42);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 30px;
+            margin: 30px 0 40px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(255, 45, 85, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .hero-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .hero-wave {
+            position: absolute;
+            bottom: -5px;
+            right: 0;
+            width: 100%;
+            height: 80px;
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        .heart-icon {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            font-size: 48px;
+            animation: pulse 2s infinite ease-in-out;
+            filter: drop-shadow(0 4px 20px rgba(255, 255, 255, 0.3));
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+
+        .hero-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 700;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .hero-value {
+            font-size: 56px;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1;
+            margin: 5px 0 10px;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero-unit {
+            font-size: 20px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            margin-left: 8px;
+        }
+
+        .hero-desc {
+            display: inline-block;
+            font-size: 14px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 16px;
+            border-radius: 30px;
+            color: #fff;
+            margin-top: 15px;
+            backdrop-filter: blur(4px);
+        }
+
+        /* ================= SECTION HEADERS ================= */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 50px 0 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+        }
+
+        .view-all {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: 20px;
+            background: rgba(255, 45, 85, 0.1);
+            border: 1px solid rgba(255, 45, 85, 0.2);
+            transition: all 0.2s;
+        }
+
+        .view-all:hover {
+            background: rgba(255, 45, 85, 0.2);
+            border-color: var(--primary);
+        }
+
+        /* ================= TOPIC GRID ================= */
+        .topic-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 20px 0 40px;
+        }
+
+        @media (max-width: 640px) {
+            .topic-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .topic-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            overflow: hidden;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            height: 160px;
+        }
+
+        .topic-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .wide-card {
+            grid-column: span 2;
+        }
+
+        @media (max-width: 640px) {
+            .wide-card {
+                grid-column: span 1;
+            }
+        }
+
+        .card-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.4;
+            transition: opacity 0.3s ease;
+        }
+
+        .topic-card:hover .card-bg {
+            opacity: 0.5;
+        }
+
+        .card-overlay {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, transparent 60%);
+        }
+
+        .card-content {
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .topic-name {
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            line-height: 1.4;
+            margin: 0;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .topic-sub {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        /* ================= NEWS SECTION ================= */
+        .news-source {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .news-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0 40px;
+        }
+
+        .news-item {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 20px;
+            text-decoration: none;
+            display: flex;
+            gap: 18px;
+            align-items: center;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .news-item:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(255, 45, 85, 0.2);
+        }
+
+        .news-image {
+            width: 70px;
+            height: 70px;
+            border-radius: 16px;
+            object-fit: cover;
+            background: #334155;
+            flex-shrink: 0;
+        }
+
+        .news-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .news-title {
+            color: #fff;
+            font-weight: 700;
+            font-size: 15px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        .news-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            gap: 12px;
+        }
+
+        .loading-text {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 40px 20px;
+            font-size: 14px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 1px solid var(--card-border);
+        }
+
+        /* ================= QUICK STATS ================= */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 25px rgba(255, 45, 85, 0.15);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ================= FOOTER ================= */
+        .footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 11px;
+            text-align: center;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* ================= SCROLLBAR ================= */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ================= ANIMATIONS ================= */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        .delay-1 { animation-delay: 0.1s; opacity: 0; }
+        .delay-2 { animation-delay: 0.2s; opacity: 0; }
+        .delay-3 { animation-delay: 0.3s; opacity: 0; }
+        .delay-4 { animation-delay: 0.4s; opacity: 0; }
+    </style>
+</head>
+<body>
+    <div class="heart-hub-wrapper">
+        <div class="heart-bg-blur"></div>
+        
+        <div class="header">
+            <a href="javascript:history.back()" class="back-btn">←</a>
+            <h1>Heart Health Hub</h1>
+        </div>
+        
+        <div class="container">
+            <!-- Hero Card with Live Heart Rate -->
+            <div class="hero-card animate-in">
+                <div class="heart-icon">❤️</div>
+                <span class="hero-label">Live Heart Rate</span>
+                <div>
+                    <span class="hero-value">72</span>
+                    <span class="hero-unit">BPM</span>
+                </div>
+                <span class="hero-desc">Normal Resting Range</span>
+                <svg class="hero-wave" viewBox="0 0 1440 120" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#ffffff" fill-opacity="0.1" d="M0,64L48,69.3C96,75,192,85,288,80C384,75,480,53,576,53.3C672,53,768,75,864,85.3C960,96,1056,96,1152,85.3C1248,75,1344,53,1392,42.7L1440,32L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"></path>
+                </svg>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="stats-grid animate-in delay-1">
+                <div class="stat-card">
+                    <div class="stat-value">60-100</div>
+                    <div class="stat-label">Healthy BPM</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">150</div>
+                    <div class="stat-label">Weekly Minutes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">7+</div>
+                    <div class="stat-label">Heart Foods</div>
+                </div>
+            </div>
+
+            <!-- Knowledge Base Section -->
+            <div class="section-header animate-in delay-2">
+                <h2 class="section-title">Knowledge Base</h2>
+                <a href="article/all-articles.html" class="view-all">View All</a>
+            </div>
+            
+            <div class="topic-grid">
+                <a href="article/article_resting_hr.html" class="topic-card animate-in delay-2">
+                    <img src="https://images.unsplash.com/photo-1552674605-469555942da1?auto=format&fit=crop&w=400&q=80" class="card-bg" alt="Running">
+                    <div class="card-overlay"></div>
+                    <div class="card-content">
+                        <h3 class="topic-name">Resting Heart Rate</h3>
+                        <p class="topic-sub">Why lower is better for heart health</p>
+                    </div>
+                </a>
+
+                <a href="article/article_stress.html" class="topic-card animate-in delay-3">
+                    <img src="https://images.unsplash.com/photo-1508964942454-1a5628444869?auto=format&fit=crop&w=400&q=80" class="card-bg" alt="Stress">
+                    <div class="card-overlay"></div>
+                    <div class="card-content">
+                        <h3 class="topic-name">Stress & Heart Health</h3>
+                        <p class="topic-sub">Understanding the connection</p>
+                    </div>
+                </a>
+
+                <a href="article/article_diet.html" class="topic-card wide-card animate-in delay-4">
+                    <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=800&q=80" class="card-bg" alt="Diet">
+                    <div class="card-overlay"></div>
+                    <div class="card-content">
+                        <h3 class="topic-name">Cardiac Nutrition Guide</h3>
+                        <p class="topic-sub">7 essential foods to include in your diet</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Trending News Section -->
+            <div class="section-header animate-in delay-3">
+                <h2 class="section-title">Trending Heart News</h2>
+                <span class="news-source">Powered by NewsAPI</span>
+            </div>
+
+            <div class="news-list">
+                <div class="loading-text" id="news-loading">Loading latest heart health news...</div>
+                <div id="news-container"></div>
+            </div>
+
+            <div class="footer">
+                HridyaCare Heart Health • Real-time Monitoring
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================= NEWS API INTEGRATION =================
+        const API_KEY = 'e3e7eb0ca1e241a0841d102438d34a45';
+        const QUERY = 'heart health OR cardiovascular OR cardiac';
+
+        async function fetchNews() {
+            const container = document.getElementById('news-container');
+            const loading = document.getElementById('news-loading');
+            
+            // Show loading state
+            container.innerHTML = '';
+            loading.style.display = 'block';
+
+            // If API key is placeholder, use demo data
+            if (API_KEY === 'YOUR_NEWS_API_KEY' || !API_KEY) {
+                console.warn("No API Key set. Showing demo data.");
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                    renderNews(getDemoData());
+                }, 800);
+                return;
+            }
+
+            try {
+                const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(QUERY)}&language=en&sortBy=publishedAt&pageSize=5&apiKey=${API_KEY}`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+
+                loading.style.display = 'none';
+                
+                if (data.articles && data.articles.length > 0) {
+                    renderNews(data.articles);
+                } else {
+                    container.innerHTML = '<div class="loading-text">No news found right now. Try again later.</div>';
+                }
+            } catch (error) {
+                console.error("Error fetching news:", error);
+                loading.style.display = 'none';
+                renderNews(getDemoData());
+            }
+        }
+
+        function renderNews(articles) {
+            const container = document.getElementById('news-container');
+            container.innerHTML = '';
+
+            articles.forEach(article => {
+                // Format date
+                const date = new Date(article.publishedAt);
+                const formattedDate = date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+
+                // Fallback image
+                const imgUrl = article.urlToImage || 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=200&q=80';
+                
+                const html = `
+                    <a href="${article.url}" target="_blank" class="news-item animate-in" style="animation-delay: ${Math.random() * 0.3 + 0.1}s">
+                        <img src="${imgUrl}" 
+                             class="news-image" 
+                             alt="News Image"
+                             onerror="this.src='https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=200&q=80'">
+                        <div class="news-content">
+                            <h3 class="news-title">${article.title}</h3>
+                            <div class="news-meta">
+                                <span>${article.source.name || 'Source'}</span>
+                                <span>•</span>
+                                <span>${formattedDate}</span>
+                            </div>
+                        </div>
+                    </a>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        function getDemoData() {
+            return [
+                {
+                    title: "New Study Reveals Mediterranean Diet Reduces Heart Disease Risk by 30%",
+                    source: { name: "Medical News Today" },
+                    publishedAt: new Date().toISOString(),
+                    url: "#",
+                    urlToImage: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=300&q=80"
+                },
+                {
+                    title: "AI Technology Now Detects Heart Conditions from ECG with 95% Accuracy",
+                    source: { name: "Science Daily" },
+                    publishedAt: new Date().toISOString(),
+                    url: "#",
+                    urlToImage: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w-300&q=80"
+                },
+                {
+                    title: "Walking 7,000 Steps Daily Lowers Heart Attack Risk by 50%, Study Finds",
+                    source: { name: "Healthline" },
+                    publishedAt: new Date().toISOString(),
+                    url: "#",
+                    urlToImage: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=300&q=80"
+                },
+                {
+                    title: "New Guidelines for Blood Pressure Management Focus on Nighttime Readings",
+                    source: { name: "Cardiology Today" },
+                    publishedAt: new Date().toISOString(),
+                    url: "#",
+                    urlToImage: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=300&q=80"
+                },
+                {
+                    title: "Stress Reduction Techniques Show Significant Impact on Heart Health",
+                    source: { name: "Psychology Today" },
+                    publishedAt: new Date().toISOString(),
+                    url: "#",
+                    urlToImage: "https://images.unsplash.com/photo-1594729095022-e2f6d2eece9c?auto=format&fit=crop&w=300&q=80"
+                }
+            ];
+        }
+
+        // ================= HEART RATE SIMULATION =================
+        function simulateHeartRate() {
+            const heartRateElement = document.querySelector('.hero-value');
+            const heartIcon = document.querySelector('.heart-icon');
+            
+            // Start with 72 BPM
+            let heartRate = 72;
+            let isIncreasing = true;
+            
+            setInterval(() => {
+                // Simulate natural heart rate variability
+                const variation = Math.random() * 3 - 1.5; // -1.5 to +1.5
+                heartRate += isIncreasing ? variation : -variation;
+                
+                // Keep within normal range
+                heartRate = Math.max(60, Math.min(100, Math.round(heartRate)));
+                
+                // Randomly change direction
+                if (Math.random() > 0.95) {
+                    isIncreasing = !isIncreasing;
+                }
+                
+                // Update display
+                heartRateElement.textContent = Math.round(heartRate);
+                
+                // Adjust pulse animation
+                const pulseSpeed = Math.max(0.5, 2 - (heartRate - 60) / 40);
+                heartIcon.style.animationDuration = `${pulseSpeed}s`;
+                
+            }, 3000); // Update every 3 seconds
+        }
+
+        // ================= INITIALIZATION =================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Fetch news
+            fetchNews();
+            
+            // Start heart rate simulation
+            setTimeout(simulateHeartRate, 1000);
+            
+            // Add smooth scroll behavior
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+            
+            // Add scroll animation trigger
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate-in');
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            // Observe elements for animation
+            document.querySelectorAll('.topic-card, .news-item, .stat-card').forEach(el => {
+                observer.observe(el);
+            });
+        });
+
+        // ================= BACK BUTTON ENHANCEMENT =================
+        document.querySelector('.back-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            // Add smooth transition
+            document.querySelector('.heart-hub-wrapper').style.opacity = '0.9';
+            setTimeout(() => {
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.href = '/';
+                }
+            }, 200);
+        });
+    </script>
+</body>
+</html>

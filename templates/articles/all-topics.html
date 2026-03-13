@@ -1,0 +1,911 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Health Topics | HridyaCare{% endblock %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<style>
+    /* ================= GLOBAL STYLES ================= */
+    * {
+        font-family: "Outfit", "Segoe UI", system-ui, sans-serif;
+        box-sizing: border-box;
+    }
+
+    html, body {
+        overflow-x: hidden;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+        background-color: #0f172a !important;
+        background-image: linear-gradient(180deg, #0f172a 0%, #1e293b 100%) !important;
+        background-attachment: fixed;
+        color: #f1f5f9;
+        min-height: 100vh;
+    }
+
+    :root {
+        --bg-main: #0f172a;
+        --card-bg: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8));
+        --card-border: rgba(255, 255, 255, 0.08);
+        --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        --primary: #ff2d55;
+        --primary-hover: #ff4769;
+        --primary-glow: rgba(255, 45, 85, 0.5);
+        --text-main: #f1f5f9;
+        --text-muted: #94a3b8;
+        --accent: #3b82f6;
+        --accent-hover: #60a5fa;
+        --success: #4ade80;
+        --warning: #fbbf24;
+        --danger: #ef4444;
+        --outline: rgba(255, 255, 255, 0.2);
+    }
+
+    /* ================= LAYOUT WRAPPER ================= */
+    .topics-wrapper {
+        color: var(--text-main);
+        line-height: 1.6;
+        background: var(--bg-main);
+        min-height: 100vh;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        margin-left: calc(50% - 50vw);
+        padding-bottom: 80px;
+        z-index: 0;
+    }
+
+    .topics-bg-blur {
+        position: fixed;
+        top: -100px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 600px;
+        height: 400px;
+        background: var(--primary);
+        opacity: 0.04;
+        filter: blur(80px);
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: auto;
+        padding: 60px 20px 100px;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* ================= HEADER ================= */
+    .header {
+        position: sticky;
+        top: 0;
+        z-index: 90;
+        padding: 20px 20px;
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--card-border);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .back-btn {
+        color: var(--text-muted);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid transparent;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .back-btn:hover {
+        color: #fff;
+        border-color: var(--outline);
+        background: rgba(255, 255, 255, 0.08);
+        transform: translateX(-2px);
+    }
+
+    .header h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+        color: #fff;
+        flex: 1;
+    }
+
+    /* ================= SEARCH BAR ================= */
+    .search-section {
+        margin: 30px 0 25px;
+        position: relative;
+    }
+
+    .search-wrapper {
+        position: relative;
+    }
+
+    .search-icon-wrapper {
+        position: absolute;
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 16px;
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    .search-input {
+        width: 100%;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 16px 20px 16px 50px;
+        border-radius: 20px;
+        color: white;
+        font-size: 15px;
+        font-weight: 500;
+        outline: none;
+        transition: all 0.3s ease;
+        box-shadow: var(--card-shadow);
+    }
+
+    .search-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(255, 45, 85, 0.2), 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .search-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    /* ================= FILTER CHIPS ================= */
+    .chips-section {
+        margin: 25px 0 30px;
+    }
+
+    .chips-container {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .chips-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    .chip {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--card-border);
+        color: var(--text-muted);
+        padding: 10px 22px;
+        border-radius: 30px;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        flex-shrink: 0;
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .chip i {
+        font-size: 14px;
+        opacity: 0.8;
+    }
+
+    .chip:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    .chip.active {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+        transform: translateY(-1px);
+    }
+
+    .chip.active:hover {
+        background: var(--accent-hover);
+        border-color: var(--accent-hover);
+        transform: translateY(-2px);
+    }
+
+    /* ================= CONTENT AREA ================= */
+    .content-area {
+        margin-top: 20px;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 40px 0 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-title i {
+        color: var(--primary);
+        font-size: 14px;
+    }
+
+    .section-count {
+        font-size: 12px;
+        color: var(--text-muted);
+        background: rgba(255, 255, 255, 0.05);
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-weight: 600;
+    }
+
+    /* ================= CARD GRID ================= */
+    .card-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+
+    @media (max-width: 640px) {
+        .card-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .topic-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 20px;
+        overflow: hidden;
+        text-decoration: none;
+        position: relative;
+        height: 180px;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: var(--card-shadow);
+        display: block;
+    }
+
+    .topic-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--primary);
+        box-shadow: 0 15px 40px rgba(255, 45, 85, 0.15);
+    }
+
+    .card-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        top: 0;
+        left: 0;
+        opacity: 0.5;
+        transition: opacity 0.3s ease;
+    }
+
+    .topic-card:hover .card-image {
+        opacity: 0.6;
+    }
+
+    .card-gradient {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.5) 60%, transparent 100%);
+    }
+
+    .card-content {
+        position: relative;
+        z-index: 2;
+        height: 100%;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+    }
+
+    .card-title {
+        font-size: 17px;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 6px 0;
+        line-height: 1.3;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .card-subtitle {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.8);
+        font-weight: 500;
+        margin: 0;
+    }
+
+    .card-icon {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(4px);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 18px;
+        opacity: 0.85;
+        transition: all 0.3s ease;
+        z-index: 3;
+    }
+
+    .topic-card:hover .card-icon {
+        opacity: 1;
+        background: var(--primary);
+        border-color: var(--primary);
+        transform: rotate(10deg);
+        box-shadow: 0 5px 15px var(--primary-glow);
+    }
+
+    /* ================= EMPTY STATE ================= */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 20px;
+        backdrop-filter: blur(12px);
+        margin: 40px 0;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+        color: var(--text-muted);
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 10px 0;
+    }
+
+    .empty-text {
+        color: var(--text-muted);
+        font-size: 14px;
+        max-width: 300px;
+        margin: 0 auto;
+        line-height: 1.5;
+    }
+
+    /* ================= ANIMATIONS ================= */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .animate-in {
+        animation: fadeIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .animate-slide {
+        animation: slideIn 0.5s ease-out forwards;
+    }
+
+    .delay-1 { animation-delay: 0.1s; opacity: 0; }
+    .delay-2 { animation-delay: 0.2s; opacity: 0; }
+    .delay-3 { animation-delay: 0.3s; opacity: 0; }
+    .delay-4 { animation-delay: 0.4s; opacity: 0; }
+
+    /* ================= SCROLLBAR ================= */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* ================= RESPONSIVE ================= */
+    @media (max-width: 768px) {
+        .container {
+            padding: 40px 15px 60px;
+        }
+
+        .header {
+            padding: 15px;
+        }
+
+        .search-input {
+            padding: 14px 20px 14px 46px;
+            font-size: 14px;
+        }
+
+        .chip {
+            padding: 9px 18px;
+            font-size: 12px;
+        }
+
+        .topic-card {
+            height: 160px;
+        }
+
+        .card-title {
+            font-size: 16px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .card-grid {
+            gap: 15px;
+        }
+
+        .section-header {
+            margin: 30px 0 15px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        .topic-card {
+            height: 150px;
+        }
+
+        .card-content {
+            padding: 16px;
+        }
+        
+        .card-icon {
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+            top: 15px;
+            right: 15px;
+        }
+    }
+</style>
+
+<div class="topics-wrapper">
+    <div class="topics-bg-blur"></div>
+    
+    <div class="header">
+        <a href="{{ url_for('index') }}" class="back-btn">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <h1>Health Topics</h1>
+    </div>
+    
+    <div class="container">
+        <div class="search-section animate-in">
+            <div class="search-wrapper">
+                <span class="search-icon-wrapper">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input type="text" id="searchInput" class="search-input" placeholder="Search conditions, symptoms, treatments..." onkeyup="filterContent()">
+            </div>
+        </div>
+
+        <div class="chips-section">
+            <div class="chips-container">
+                <div class="chip active animate-slide delay-1" onclick="setCategory('all', this)">
+                    <i class="fa-solid fa-layer-group"></i> All Topics
+                </div>
+                <div class="chip animate-slide delay-2" onclick="setCategory('cardiac', this)">
+                    <i class="fa-solid fa-heart-pulse"></i> Heart
+                </div>
+                <div class="chip animate-slide delay-3" onclick="setCategory('lungs', this)">
+                    <i class="fa-solid fa-lungs"></i> Lungs
+                </div>
+                <div class="chip animate-slide delay-4" onclick="setCategory('sleep', this)">
+                    <i class="fa-solid fa-moon"></i> Sleep
+                </div>
+                <div class="chip animate-slide" style="animation-delay: 0.5s; opacity: 0;" onclick="setCategory('wellness', this)">
+                    <i class="fa-solid fa-spa"></i> Wellness
+                </div>
+                <div class="chip animate-slide" style="animation-delay: 0.6s; opacity: 0;" onclick="setCategory('prevention', this)">
+                    <i class="fa-solid fa-shield-heart"></i> Prevention
+                </div>
+            </div>
+        </div>
+
+        <div id="content-area" class="content-area">
+            
+            <div class="topic-section animate-in delay-1" data-cat="cardiac">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fa-solid fa-heart-circle-bolt"></i> Cardiac Health</h2>
+                    <span class="section-count" id="cardiac-count">4 topics</span>
+                </div>
+                <div class="card-grid">
+                    <a href="/heart-health" class="topic-card" data-name="Heart Rate" data-description="Monitor your beats per minute">
+                        <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80" class="card-image" alt="Heart Rate">
+                        <div class="card-gradient"></div>
+                        <div class="card-content">
+                            <span class="card-icon"><i class="fa-solid fa-heart-pulse"></i></span>
+                            <h3 class="card-title">Heart Rate</h3>
+                            <p class="card-subtitle">Monitor beats per minute</p>
+                        </div>
+                    </a>
+                    
+                    <a href="/heart-disease" class="topic-card" data-name="Heart Disease" data-description="Risk factors and prevention">
+                        <img src="https://images.unsplash.com/photo-1628348068343-c6a848d2b6dd?auto=format&fit=crop&w=400&q=80" class="card-image" alt="Heart Disease">
+                        <div class="card-gradient"></div>
+                        <div class="card-content">
+                            <span class="card-icon"><i class="fa-solid fa-notes-medical"></i></span>
+                            <h3 class="card-title">Heart Disease</h3>
+                            <p class="card-subtitle">Risk factors & prevention</p>
+                        </div>
+                    </a>
+                    
+                    <a href="/blood-pressure" class="topic-card" data-name="Blood Pressure" data-description="Hypertension management">
+                        <img src="https://images.unsplash.com/photo-1576091160550-217358c7e618?auto=format&fit=crop&w=400&q=80" class="card-image" alt="Blood Pressure">
+                        <div class="card-gradient"></div>
+                        <div class="card-content">
+                            <span class="card-icon"><i class="fa-solid fa-gauge-high"></i></span>
+                            <h3 class="card-title">Blood Pressure</h3>
+                            <p class="card-subtitle">Hypertension management</p>
+                        </div>
+                    </a>
+                    
+                    <a href="/cholesterol" class="topic-card" data-name="Cholesterol" data-description="Lipid profile guide">
+                        <img src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=400&q=80" class="card-image" alt="Cholesterol">
+                        <div class="card-gradient"></div>
+                        <div class="card-content">
+                            <span class="card-icon"><i class="fa-solid fa-vial"></i></span>
+                            <h3 class="card-title">Cholesterol</h3>
+                            <p class="card-subtitle">Lipid profile guide</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="topic-section animate-in delay-2" data-cat="lungs">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fa-solid fa-lungs"></i> Respiratory Health</h2>
+                    <span class="section-count" id="lungs-count">2 topics</span>
+                </div>
+                <div class="card-grid">
+                    <a href="/spo2" class="topic-card" data-name="SpO2" data-description="Oxygen saturation levels">
+                        <img src="https://images.unsplash.com/photo-1584036561566-b93a90a6b98e?auto=format&fit=crop&w=400&q=80" class="card-image" alt="SpO2">
+                        <div class="card-gradient"></div>
+                        <div class="card-content">
+                            <span class="card-icon"><i class="fa-solid fa-mask-ventilator"></i></span>
+                            <h3 class="card-title">SpO2 Levels</h3>
+                            <p class="card-subtitle">Oxygen saturation guide</p>
+                        </div>
+                    </a>
+                    
+                    <a href="/breathing" class="topic-card" data-name="Respiration" data-description="Breathing rate patterns">
+                        <img src="https://images.unsplash.com/photo-1516574187841-69301740b370?auto=format&fit=crop&w=400&q=80" class="card-image" alt="Respiration">
+                        <div class="card-gradient"></div>
+                        <div class="card-content">
+                            <span class="card-icon"><i class="fa-solid fa-wind"></i></span>
+                            <h3 class="card-title">Respiration</h3>
+                            <p class="card-subtitle">Breathing rate patterns</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="topic-section animate-in delay-3" data-cat="wellness">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fa-solid fa-spa"></i> General Wellness</h2>
+                    <span class="section-count" id="wellness-count">2 topics</span>
+                </div>
+                <div class="card-grid">
+                    <a href="{{ url_for('stress_check') }}" class="topic-card" data-name="Stress Level" data-description="Take assessment test">
+                        <img src="https://images.unsplash.com/photo-1470116892389-0de5d9770b2c?auto=format&fit=crop&w=400&q=80" class="card-image" alt="Stress">
+                        <div class="card-gradient"></div>
+                        <div class="card-content">
+                            <span class="card-icon"><i class="fa-solid fa-brain"></i></span>
+                            <h3 class="card-title">Stress Assessment</h3>
+                            <p class="card-subtitle">Take evaluation test</p>
+                        </div>
+                    </a>
+                    
+                    <a href="/sleep" class="topic-card" data-name="Sleep Quality" data-description="Analysis and improvement">
+                        <img src="https://images.unsplash.com/photo-1520206183501-b80df61043c2?auto=format&fit=crop&w=400&q=80" class="card-image" alt="Sleep">
+                        <div class="card-gradient"></div>
+                        <div class="card-content">
+                            <span class="card-icon"><i class="fa-solid fa-bed"></i></span>
+                            <h3 class="card-title">Sleep Quality</h3>
+                            <p class="card-subtitle">Analysis & improvement</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="topic-section animate-in delay-4" data-cat="prevention">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fa-solid fa-shield-virus"></i> Prevention & Care</h2>
+                    <span class="section-count" id="prevention-count">2 topics</span>
+                </div>
+                <div class="card-grid">
+                    <a href="/nutrition" class="topic-card" data-name="Nutrition Guide" data-description="Heart-healthy foods">
+                        <img src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=400&q=80" class="card-image" alt="Nutrition">
+                        <div class="card-gradient"></div>
+                        <div class="card-content">
+                            <span class="card-icon"><i class="fa-solid fa-apple-whole"></i></span>
+                            <h3 class="card-title">Nutrition Guide</h3>
+                            <p class="card-subtitle">Heart-healthy foods</p>
+                        </div>
+                    </a>
+                    
+                    <a href="/exercise" class="topic-card" data-name="Exercise Routine" data-description="Cardiac-friendly workouts">
+                        <img src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=400&q=80" class="card-image" alt="Exercise">
+                        <div class="card-gradient"></div>
+                        <div class="card-content">
+                            <span class="card-icon"><i class="fa-solid fa-person-running"></i></span>
+                            <h3 class="card-title">Exercise Routine</h3>
+                            <p class="card-subtitle">Cardiac-friendly workouts</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                <h3 class="empty-title">No topics found</h3>
+                <p class="empty-text">Try adjusting your search or filter to find what you're looking for.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ================= STATE MANAGEMENT =================
+    let currentCategory = 'all';
+    let allTopics = [];
+    let visibleTopics = [];
+
+    // ================= INITIALIZATION =================
+    document.addEventListener('DOMContentLoaded', () => {
+        // Collect all topics
+        collectTopics();
+        
+        // Update section counts
+        updateSectionCounts();
+        
+        // Initialize search with empty state
+        filterContent();
+        
+        // Add hover effects to cards
+        initCardAnimations();
+        
+        // Add intersection observer for scroll animations
+        initScrollAnimations();
+    });
+
+    function collectTopics() {
+        const cards = document.querySelectorAll('.topic-card');
+        allTopics = Array.from(cards).map(card => ({
+            element: card,
+            name: card.dataset.name.toLowerCase(),
+            description: card.dataset.description ? card.dataset.description.toLowerCase() : '',
+            category: card.closest('.topic-section').dataset.cat
+        }));
+    }
+
+    function updateSectionCounts() {
+        const sections = document.querySelectorAll('.topic-section');
+        sections.forEach(section => {
+            const cat = section.dataset.cat;
+            const count = section.querySelectorAll('.topic-card').length;
+            const countElement = document.getElementById(`${cat}-count`);
+            if (countElement) {
+                countElement.textContent = `${count} topic${count !== 1 ? 's' : ''}`;
+            }
+        });
+    }
+
+    function initCardAnimations() {
+        const cards = document.querySelectorAll('.topic-card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-5px) scale(1.01)';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    }
+
+    function initScrollAnimations() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-in');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        document.querySelectorAll('.topic-card').forEach(card => {
+            observer.observe(card);
+        });
+    }
+
+    // ================= FILTER FUNCTIONS =================
+    function setCategory(cat, btnElement) {
+        // Update active chip
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        btnElement.classList.add('active');
+        
+        // Update category and filter
+        currentCategory = cat;
+        filterContent();
+        
+        // Add animation to chip
+        btnElement.style.animation = 'none';
+        setTimeout(() => {
+            btnElement.style.animation = 'slideIn 0.3s ease-out';
+        }, 10);
+    }
+
+    function filterContent() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const emptyState = document.getElementById('emptyState');
+        let hasVisibleContent = false;
+        
+        // Filter topics based on category and search
+        allTopics.forEach(topic => {
+            const matchesCategory = currentCategory === 'all' || topic.category === currentCategory;
+            const matchesSearch = !query || 
+                topic.name.includes(query) || 
+                topic.description.includes(query) ||
+                topic.element.querySelector('.card-title').textContent.toLowerCase().includes(query);
+            
+            const shouldShow = matchesCategory && matchesSearch;
+            
+            if (shouldShow) {
+                topic.element.style.display = 'block';
+                topic.element.classList.add('animate-in');
+                hasVisibleContent = true;
+            } else {
+                topic.element.style.display = 'none';
+            }
+        });
+        
+        // Show/hide sections based on visible cards
+        document.querySelectorAll('.topic-section').forEach(section => {
+            const cardsInSection = section.querySelectorAll('.topic-card');
+            const hasVisibleCards = Array.from(cardsInSection).some(card => card.style.display !== 'none');
+            
+            if (hasVisibleCards) {
+                section.style.display = 'block';
+                section.classList.add('animate-in');
+            } else {
+                section.style.display = 'none';
+            }
+            
+            // Update section counts
+            if (section.style.display !== 'none') {
+                const cat = section.dataset.cat;
+                const visibleCount = Array.from(cardsInSection).filter(card => card.style.display !== 'none').length;
+                const countElement = document.getElementById(`${cat}-count`);
+                if (countElement) {
+                    countElement.textContent = `${visibleCount} topic${visibleCount !== 1 ? 's' : ''}`;
+                }
+            }
+        });
+        
+        // Show empty state if no content
+        if (!hasVisibleContent) {
+            emptyState.style.display = 'block';
+            emptyState.classList.add('animate-in');
+        } else {
+            emptyState.style.display = 'none';
+        }
+    }
+
+    // ================= ENHANCED SEARCH =================
+    let searchTimeout;
+    const searchInput = document.getElementById('searchInput');
+    
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(filterContent, 300); // Debounce 300ms
+    });
+    
+    // Clear search on Escape
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            searchInput.value = '';
+            filterContent();
+            searchInput.blur();
+        }
+    });
+
+    // ================= BACK BUTTON ENHANCEMENT =================
+    document.querySelector('.back-btn').addEventListener('click', (e) => {
+        e.preventDefault();
+        // Add smooth transition
+        document.querySelector('.topics-wrapper').style.opacity = '0.9';
+        setTimeout(() => {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/';
+            }
+        }, 200);
+    });
+</script>
+
+{% endblock %}

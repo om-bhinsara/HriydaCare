@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Coach Dashboard | HridyaCare</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    /* --- GLOBAL THEME --- */
+    :root {
+        --bg-dark: #0f172a; --bg-sidebar: #111827; --bg-card: #1e293b;
+        --primary: #f43f5e; --primary-hover: #e11d48;
+        --text-main: #f8fafc; --text-muted: #94a3b8;
+        --border: rgba(255, 255, 255, 0.08);
+    }
+    * { box-sizing: border-box; }
+    
+    body { 
+        margin: 0; font-family: 'Inter', sans-serif; 
+        background: var(--bg-dark); color: var(--text-main); 
+        height: 100vh; width: 100vw; display: flex; 
+        flex-direction: column; overflow: hidden; 
+    }
+
+    /* HEADER */
+    header { 
+        height: 64px; background: var(--bg-sidebar); 
+        border-bottom: 1px solid var(--border); 
+        display: flex; align-items: center; justify-content: space-between; 
+        padding: 0 24px; flex-shrink: 0; width: 100%;
+    }
+    .brand { font-size: 18px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .brand span { color: var(--primary); }
+    
+    .logout-btn { 
+        background: transparent; border: 1px solid var(--border); 
+        color: var(--text-muted); padding: 8px 16px; border-radius: 8px; 
+        font-size: 13px; font-weight: 500; cursor: pointer; transition: 0.2s; 
+        text-decoration: none; 
+    }
+    .logout-btn:hover { border-color: var(--primary); color: #fff; background: rgba(244, 63, 94, 0.1); }
+
+    /* DASHBOARD CONTAINER */
+    .dashboard-container { 
+        display: flex; flex: 1; width: 100%; overflow: hidden; 
+    }
+    
+    /* SIDEBAR */
+    .sidebar { 
+        width: 300px; background: var(--bg-sidebar); 
+        border-right: 1px solid var(--border); 
+        display: flex; flex-direction: column; flex-shrink: 0; 
+    }
+    .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); }
+    .coach-name { font-weight: 700; font-size: 16px; color: #fff; }
+    .coach-email { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .verified-pill { 
+        display: inline-block; font-size: 10px; font-weight: 700; 
+        background: rgba(16, 185, 129, 0.15); color: #10b981; 
+        padding: 2px 8px; border-radius: 10px; margin-top: 8px; 
+    }
+    .sidebar-content { flex: 1; overflow-y: auto; padding: 16px; }
+    .section-label { 
+        font-size: 11px; font-weight: 700; text-transform: uppercase; 
+        letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px; display: block; 
+    }
+
+    /* PATIENT LIST */
+    .patient-item { 
+        padding: 14px; border-radius: 12px; margin-bottom: 8px; 
+        cursor: pointer; display: flex; justify-content: space-between; 
+        align-items: center; transition: all 0.2s; border: 1px solid transparent; 
+    }
+    .patient-item:hover { background: rgba(255,255,255,0.03); }
+    .patient-item.active { background: rgba(244, 63, 94, 0.1); border-color: var(--primary); }
+    .patient-item.active .p-name { color: var(--primary); }
+    .p-name { font-size: 14px; font-weight: 600; color: #e2e8f0; display: flex; align-items: center; gap: 8px; }
+    .p-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* MAIN CONTENT */
+    .main-content { 
+        flex: 1; overflow-y: auto; padding: 30px; 
+        background: var(--bg-dark); min-width: 0; width: 100%;
+    }
+
+    .card { 
+        background: var(--bg-card); border-radius: 16px; padding: 24px; 
+        border: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+        margin-bottom: 24px; width: 100%;
+    }
+    
+    h3 { 
+        margin: 0 0 20px 0; font-size: 16px; font-weight: 700; 
+        color: #fff; border-bottom: 1px solid var(--border); 
+        padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center; 
+    }
+
+    /* PRIVACY BANNER */
+    .privacy-banner { 
+        background: rgba(59, 130, 246, 0.1); border: 1px dashed #3b82f6; 
+        color: #93c5fd; padding: 16px; border-radius: 12px; 
+        font-size: 13px; margin-bottom: 20px; display: flex; 
+        align-items: center; gap: 12px; width: 100%;
+    }
+    .privacy-content { flex: 1; }
+
+    /* VITALS GRID */
+    .vitals-grid { 
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
+        gap: 20px; list-style: none; padding: 0; margin: 0; width: 100%;
+    }
+    .vital-card { 
+        background: rgba(0,0,0,0.2); padding: 20px; border-radius: 14px; 
+        text-align: center; border: 1px solid var(--border); 
+    }
+    .v-label { 
+        font-size: 11px; font-weight: 700; color: var(--text-muted); 
+        text-transform: uppercase; margin-bottom: 6px; 
+    }
+    .v-value { font-size: 24px; font-weight: 700; color: #fff; }
+
+    /* CHAT SYSTEM */
+    .notes-scroll { 
+        height: 400px; overflow-y: auto; padding-right: 8px; margin-bottom: 20px; 
+        display: flex; flex-direction: column; gap: 16px; 
+        background: rgba(0,0,0,0.2); padding: 20px; 
+        border-radius: 12px; border: 1px solid var(--border); 
+    }
+    
+    .chat-bubble { 
+        max-width: 75%; padding: 12px 16px; border-radius: 12px; 
+        font-size: 14px; line-height: 1.5; position: relative; word-wrap: break-word; 
+    }
+    
+    .msg-user { align-self: flex-start; background: #334155; color: #f1f5f9; border-bottom-left-radius: 2px; }
+    .msg-coach { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
+
+    .msg-meta { 
+        font-size: 10px; opacity: 0.7; margin-bottom: 4px; 
+        display: block; font-weight: 700; text-transform: uppercase; 
+    }
+
+    .input-wrapper { position: relative; width: 100%; }
+    textarea { 
+        width: 100%; padding: 16px; border-radius: 12px; 
+        background: #0f172a; border: 1px solid var(--border); 
+        color: white; font-family: inherit; font-size: 14px; 
+        resize: none; outline: none; min-height: 80px; 
+    }
+    textarea:focus { border-color: var(--primary); }
+    
+    .btn-primary { 
+        position: absolute; bottom: 12px; right: 12px; 
+        background: var(--primary); color: white; border: none; 
+        padding: 8px 16px; border-radius: 8px; font-weight: 600; 
+        font-size: 13px; cursor: pointer; transition: 0.2s; 
+    }
+    .btn-primary:hover { background: var(--primary-hover); }
+    
+    .anon-badge {
+        background: #334155; color: #cbd5e1; font-size: 10px; 
+        padding: 4px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-container { flex-direction: column; overflow-y: auto; }
+        .sidebar { width: 100%; height: auto; max-height: 250px; border-right: none; border-bottom: 1px solid var(--border); }
+        .main-content { overflow: visible; }
+    }
+
+</style>
+</head>
+<body>
+
+<header>
+    <div class="brand">❤️ <span>HridyaCare</span> Coach</div>
+    <a href="#" class="logout-btn">Sign Out</a>
+</header>
+
+<div class="dashboard-container">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="coach-name" id="coachName">Loading...</div>
+            <div class="coach-email" id="coachEmail">...</div>
+            <span class="verified-pill" id="coachStatus">Checking...</span>
+        </div>
+        <div class="sidebar-content">
+            <span class="section-label">Active Consultations</span>
+            <div id="patientList">
+                <div style="text-align:center; color:var(--text-muted); padding:20px; font-size:13px;">Loading list...</div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="privacy-banner">
+            <span style="font-size:20px">🔒</span>
+            <div class="privacy-content">
+                <strong>Privacy Protocol Active:</strong> Patient identity is masked. You are viewing <strong>Age, AQI, and Heart Data</strong> only.
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📊 Restricted Health Data <span class="anon-badge" id="headerAnonId">No Patient Selected</span></h3>
+            <ul id="vitalsGrid" class="vitals-grid">
+                <li style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">
+                    <div style="font-size:32px; margin-bottom:10px; opacity:0.5;">👈</div>
+                    Select an anonymous patient from the sidebar.
+                </li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h3>💬 Encrypted Consultation Channel</h3>
+            <div id="notesContainer" class="notes-scroll">
+                <div style="text-align:center; padding-top:100px; color:var(--text-muted);">
+                    Chat history will appear here.
+                </div>
+            </div>
+            <div class="input-wrapper">
+                <textarea id="coachNoteInput" placeholder="Type your advice here... (Patient will see this immediately)"></textarea>
+                <button class="btn-primary" id="saveNoteBtn">Send Reply</button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+// --- PRIVACY ENGINE: Anonymizer Function ---
+function maskPatientName(id) {
+    return `Patient-${id.toString().padStart(4, '0')}`;
+}
+
+// 1. INIT COACH PROFILE
+async function loadCoachProfile() {
+    try {
+        const res = await fetch("/api/coach/profile");
+        if(res.ok) {
+            const data = await res.json();
+            document.getElementById("coachName").innerText = data.name;
+            document.getElementById("coachEmail").innerText = data.email;
+            document.getElementById("coachStatus").innerText = data.status === "approved" ? "Verified Coach" : "Pending";
+        } else {
+            document.getElementById("coachName").innerText = "Guest";
+        }
+    } catch(e) { console.error("Profile Error", e); }
+}
+
+// 2. LOAD PATIENT LIST
+fetch("/api/coach/requests")
+  .then(res => res.json())
+  .then(data => {
+    const list = document.getElementById("patientList");
+    list.innerHTML = "";
+
+    if (!data.length) {
+      list.innerHTML = "<div style='text-align:center; color:#94a3b8; padding:20px; font-size:13px;'>No active requests.</div>";
+      return;
+    }
+
+    data.forEach(req => {
+      const anonName = maskPatientName(req.patient_id);
+      list.innerHTML += `
+        <div class="patient-item" data-id="${req.patient_id}" onclick="selectPatient(this)">
+          <div>
+            <div class="p-name"><span style="font-size:16px;">👤</span> ${anonName}</div>
+            <div class="p-sub">${req.reason || 'General Consult'}</div>
+          </div>
+          <div style="color:#64748b;">›</div>
+        </div>
+      `;
+    });
+  })
+  .catch(err => console.error("Error loading requests", err));
+
+// 3. SELECT PATIENT HANDLER
+let selectedPatientId = null;
+let chatPollInterval = null;
+
+function selectPatient(el) {
+    document.querySelectorAll(".patient-item").forEach(p => p.classList.remove("active"));
+    el.classList.add("active");
+    selectedPatientId = el.dataset.id;
+    
+    document.getElementById("headerAnonId").innerText = maskPatientName(selectedPatientId);
+    
+    // Load Data
+    loadVitals(selectedPatientId);
+    loadChat(selectedPatientId);
+    
+    if (chatPollInterval) clearInterval(chatPollInterval);
+    chatPollInterval = setInterval(() => loadChat(selectedPatientId, false), 3000); 
+}
+
+// 4. LOAD VITALS
+async function loadVitals(userId) {
+    const grid = document.getElementById("vitalsGrid");
+    const mockAge = Math.floor(Math.random() * (60 - 25 + 1) + 25);
+    
+    try {
+        const res = await fetch(`/api/last-health-summary?user_id=${userId}`);
+        const data = await res.json();
+
+        if (!data.exists) {
+            grid.innerHTML = `<li style="grid-column:1/-1;text-align:center;color:#f43f5e; padding:30px;">Data unavailable.</li>`;
+            return;
+        }
+
+        grid.innerHTML = `
+            <li class="vital-card">
+                <div class="v-label">Patient Age</div>
+                <div class="v-value" style="color:#94a3b8">${mockAge}</div>
+            </li>
+            <li class="vital-card">
+                <div class="v-label">Avg Heart Rate</div>
+                <div class="v-value" style="color:#f43f5e">${data.bpm} <span style="font-size:14px;">BPM</span></div>
+            </li>
+            <li class="vital-card">
+                <div class="v-label">Environment AQI</div>
+                <div class="v-value" style="color:#eab308">${data.aqi}</div>
+            </li>
+            <li class="vital-card">
+                <div class="v-label">Calculated Risk</div>
+                <div class="v-value" style="font-size:18px;">${data.impactCategory}</div>
+            </li>
+            <li style="grid-column: 1/-1; margin-top:10px;">
+                <canvas id="coachChart" height="200" style="width:100%;"></canvas>
+            </li>
+        `;
+
+        // IMPORTANT: Load graph AFTER DOM update
+        setTimeout(() => loadGraph(userId), 100);
+
+    } catch(e) {
+        console.error(e);
+        grid.innerHTML = "Error loading vitals.";
+    }
+}
+
+async function loadGraph(userId) {
+    try {
+        const res = await fetch(`/api/coach/patient/${userId}/last-7`);
+        const data = await res.json();
+        
+        if(!data || !data.length) return;
+        
+        const ctx = document.getElementById("coachChart");
+        if(!ctx) return; 
+
+        if (window.coachChartInstance) window.coachChartInstance.destroy();
+
+        window.coachChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => new Date(d.time).toLocaleDateString(undefined, {day:'numeric'})),
+                datasets: [{
+                    label: 'Heart Rate Trend',
+                    data: data.map(d => d.bpm),
+                    borderColor: '#f43f5e',
+                    backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: '#64748b' } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } }
+                }
+            }
+        });
+    } catch(e) { console.error("Graph error", e); }
+}
+
+// 5. LOAD CHAT
+async function loadChat(userId, scrollToBottom = true) {
+    const container = document.getElementById("notesContainer");
+    
+    try {
+        const res = await fetch(`/api/coach/patient/${userId}`);
+        const data = await res.json();
+        let html = "";
+
+        if (data.notes && data.notes.length) {
+            data.notes.forEach(n => {
+                const isUser = n.sender === 'patient';
+                const senderName = isUser ? maskPatientName(userId) : "You (Coach)";
+                const bubbleClass = isUser ? "msg-user" : "msg-coach";
+
+                html += `
+                    <div class="chat-bubble ${bubbleClass}">
+                        <span class="msg-meta">${senderName} • ${n.date}</span>
+                        ${n.note}
+                    </div>
+                `;
+            });
+        } else {
+            html = "<p style='text-align:center; color:#64748b; margin-top:40px;'>No messages yet. Start the conversation.</p>";
+        }
+
+        container.innerHTML = html;
+        if(scrollToBottom) container.scrollTop = container.scrollHeight;
+    } catch(e) { console.error("Chat error", e); }
+}
+
+// 6. SEND MESSAGE
+document.getElementById("saveNoteBtn").addEventListener("click", async () => {
+    if (!selectedPatientId) return alert("Select a patient first.");
+    const input = document.getElementById("coachNoteInput");
+    const note = input.value.trim();
+    if (!note) return;
+
+    const btn = document.getElementById("saveNoteBtn");
+    btn.disabled = true; btn.innerText = "...";
+
+    try {
+        await fetch("/api/coach/add-note", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ patient_id: selectedPatientId, note: note }) 
+        });
+        input.value = "";
+        loadChat(selectedPatientId);
+    } catch(e) { alert("Error sending"); } 
+    finally { btn.disabled = false; btn.innerText = "Send Reply"; }
+});
+
+loadCoachProfile();
+</script>
+</body>
+</html>

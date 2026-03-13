@@ -1,0 +1,635 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Terms & Conditions | HridyaCare{% endblock %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    /* --- COMMON STYLES --- */
+    :root {
+        --bg-dark: #0f172a;
+        --card-bg: rgba(30, 41, 59, 0.6);
+        --card-border: rgba(255, 255, 255, 0.08);
+        --primary: #f43f5e;
+        --primary-glow: rgba(244, 63, 94, 0.25);
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --radius-lg: 20px;
+        --radius-md: 12px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Override Body Background */
+    body {
+        background: var(--bg-dark);
+        color: var(--text-main);
+        font-family: 'Outfit', sans-serif;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-dark); }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+    /* --- LAYOUT STRUCTURE --- */
+    .page-layout {
+        width: 100%;
+        padding: 0;
+    }
+
+    .terms-wrapper {
+        width: 100%;
+        max-width: 1400px;
+        margin: auto;
+        padding: 20px 15px;
+    }
+
+    .content-container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 35px;
+    }
+
+    /* --- HEADER SECTION --- */
+    .page-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .header-badge {
+        display: inline-block;
+        padding: 8px 20px;
+        background: rgba(244, 63, 94, 0.1);
+        color: var(--primary);
+        border-radius: 100px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        border: 1px solid rgba(244, 63, 94, 0.2);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .page-header h1 {
+        font-size: 2.4rem;
+        font-weight: 800;
+        color: #fff;
+    }
+
+    .page-header p {
+        color: var(--text-muted);
+        font-size: 1.2rem;
+        line-height: 1.6;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    /* --- SIDEBAR NAVIGATION --- */
+    .page-sidebar {
+        position: sticky;
+        top: 120px;
+        background: linear-gradient(180deg, rgba(30,41,59,0.8), rgba(15,23,42,0.95)); /* Last definition wins, but kept backdrop for fallback */
+        border: 1px solid rgba(255,255,255,0.08);
+        backdrop-filter: blur(16px);
+        padding: 22px;
+        border-radius: 18px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    }
+
+    .page-sidebar h4 {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        color: var(--primary);
+        margin-bottom: 25px;
+        letter-spacing: 1.2px;
+        font-weight: 800;
+        opacity: 0.9;
+    }
+
+    .page-sidebar ul { 
+        list-style: none; 
+        padding: 0; 
+        margin: 0; 
+    }
+    
+    .page-sidebar li { 
+        margin-bottom: 8px; 
+    }
+
+    .page-sidebar li a {
+        display: block;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.95rem;
+        padding: 12px 16px;
+        transition: var(--transition);
+        border-radius: 10px;
+        font-weight: 500;
+        border-left: 2px solid transparent;
+    }
+
+    .page-sidebar li a:hover,
+    .page-sidebar li a.active {
+        color: var(--text-main);
+        background: rgba(255, 255, 255, 0.04);
+        border-left-color: var(--primary);
+        padding-left: 20px;
+    }
+
+    /* --- CONTENT AREA --- */
+    .content-area {
+        width: 100%;
+        max-width: 100%;
+        flex-grow: 1;
+    }
+
+    .content-section {
+        background: rgba(30, 41, 59, 0.65);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+        padding: 30px 35px;
+        margin-bottom: 22px;
+        backdrop-filter: blur(14px);
+        width: 100%;
+        max-width: 100%;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+        position: relative; /* Needed for ::before */
+    }
+
+    .content-section::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at top right, rgba(244,63,94,0.06), transparent 60%);
+        pointer-events: none;
+    }
+
+    .content-section:hover {
+        border-color: rgba(255,255,255,0.2);
+        box-shadow: 0 20px 50px rgba(244,63,94,0.08);
+        transform: translateY(-3px);
+    }
+
+    .content-section h3 {
+        color: var(--text-main);
+        font-size: 1.8rem;
+        margin-bottom: 25px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        position: relative;
+        padding-bottom: 15px;
+    }
+
+    .content-section h3::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 50px;
+        height: 2px;
+        background: linear-gradient(90deg,#f43f5e,#fb7185);
+    }
+
+    .content-section p, 
+    .content-section li {
+        color: #cbd5e1;
+        font-size: 0.95rem;
+        line-height: 1.7;
+    }
+
+    .content-section p {
+        max-width: 100%;
+        padding-right: 0;
+    }
+
+    .content-section ul { 
+        padding-left: 20px; 
+        margin: 25px 0; 
+    }
+    
+    .content-section li { 
+        list-style-type: none; 
+        position: relative; 
+        padding-left: 30px;
+        margin-bottom: 12px;
+    }
+    
+    .content-section li::before {
+        content: "•";
+        position: absolute;
+        left: 0;
+        color: var(--primary);
+        font-size: 1.5rem;
+        line-height: 1;
+    }
+
+    /* --- COMPONENTS --- */
+    
+    /* Two-column list */
+    .two-column-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        margin: 30px 0;
+    }
+
+    .two-column-list ul {
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Highlight Box */
+    .highlight-box {
+        background: rgba(244,63,94,0.06);
+        border-left: 3px solid #f43f5e;
+        padding: 18px 22px;
+        border-radius: 12px;
+    }
+    
+    .highlight-box p { 
+        color: var(--text-main); 
+        margin-bottom: 0; 
+        font-weight: 500;
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+
+    /* Disclaimer Box */
+    .disclaimer-box { 
+        background: rgba(234, 179, 8, 0.05); 
+        border-left-color: #eab308; 
+    }
+    
+    .disclaimer-box p { 
+        color: #fef08a; 
+    }
+
+    /* Contact Section */
+    .contact-section {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 60px 50px;
+        text-align: center;
+        margin-top: 40px;
+        border-radius: var(--radius-lg);
+        width: 100%;
+    }
+    
+    .contact-section h3 {
+        font-size: 2rem;
+        margin-bottom: 20px;
+        color: var(--text-main);
+    }
+    
+    .contact-section h3::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    .contact-section p {
+        font-size: 1.2rem;
+        max-width: 800px;
+        margin: 0 auto 30px;
+        color: var(--text-muted);
+    }
+
+    /* Button Style */
+    .primary-button {
+        display: inline-block;
+        margin-top: 15px;
+        color: #fff;
+        background: linear-gradient(135deg, #f43f5e, #e11d48);
+        padding: 18px 45px;
+        border-radius: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        font-size: 1.1rem;
+        box-shadow: 0 10px 30px -5px rgba(244, 63, 94, 0.4);
+        transition: var(--transition);
+        border: none;
+        cursor: pointer;
+    }
+    
+    .primary-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 40px -5px rgba(244, 63, 94, 0.6);
+    }
+
+    /* Footer */
+    .page-footer {
+        text-align: center; 
+        color: var(--text-muted); 
+        font-size: 0.9rem; 
+        margin-top: 60px; 
+        padding-top: 30px; 
+        border-top: 1px solid var(--card-border);
+        width: 100%;
+    }
+
+    /* --- MOBILE RESPONSIVENESS --- */
+    @media (max-width: 1200px) {
+        .page-layout {
+            padding: 30px 30px 50px;
+        }
+        
+        .content-container {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            align-items: start;
+        }
+        
+        .content-section {
+            padding: 40px 35px;
+        }
+    }
+
+    @media (max-width: 900px) {
+        .content-container {
+            grid-template-columns: 1fr;
+            gap: 40px;
+        }
+        
+        .page-sidebar {
+            position: relative;
+            top: 0;
+            margin-bottom: 20px;
+        }
+        
+        .page-header h1 {
+            font-size: 2.5rem;
+        }
+        
+        .page-header p {
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+        
+        .content-section { 
+            padding: 35px 30px; 
+        }
+        
+        .contact-section { 
+            padding: 50px 30px; 
+        }
+        
+        .two-column-list {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-layout {
+            padding: 25px 20px 40px;
+        }
+        
+        .content-section { 
+            padding: 30px 25px; 
+        }
+        
+        .content-section h3 {
+            font-size: 1.6rem;
+        }
+        
+        .contact-section {
+            padding: 40px 25px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .page-layout {
+            padding: 20px 15px 30px;
+        }
+        
+        .page-header h1 {
+            font-size: 2rem;
+        }
+        
+        .content-section { 
+            padding: 25px 20px; 
+        }
+        
+        .primary-button {
+            padding: 16px 35px;
+            font-size: 1rem;
+        }
+        
+        .page-sidebar {
+            padding: 20px;
+        }
+    }
+</style>
+
+<script>
+    // Common JavaScript for both pages
+    document.addEventListener('DOMContentLoaded', function() {
+        // Smooth scroll for sidebar links
+        const sidebarLinks = document.querySelectorAll('.page-sidebar a');
+        const sections = document.querySelectorAll('.content-section');
+        
+        // Set active link on scroll
+        function setActiveLink() {
+            let current = '';
+            const scrollPos = window.scrollY + 150;
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                
+                if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            sidebarLinks.forEach(link => {
+                link.classList.remove('active');
+                const href = link.getAttribute('href').substring(1);
+                if (href === current) {
+                    link.classList.add('active');
+                }
+            });
+        }
+        
+        // Set active link on page load
+        setActiveLink();
+        
+        // Update active link on scroll
+        window.addEventListener('scroll', setActiveLink);
+        
+        // Smooth scroll to sections when clicking sidebar links
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                if (targetElement) {
+                    // Remove active class from all links
+                    sidebarLinks.forEach(l => l.classList.remove('active'));
+                    
+                    // Add active class to clicked link
+                    this.classList.add('active');
+                    
+                    // Scroll to target
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // Add hover effect to sections
+        const allSections = document.querySelectorAll('.content-section');
+        allSections.forEach(section => {
+            section.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+            });
+            
+            section.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-layout">
+    <div class="terms-wrapper">
+
+        <div class="page-header">
+            <span class="header-badge">Last Updated: January 2026</span>
+            <h1>Terms & Conditions</h1>
+            <p>
+                These Terms govern your use of HridyaCare—a wellness-focused platform 
+                utilizing PPG technology to provide physiological insights via your device's camera.
+            </p>
+        </div>
+
+        <div class="content-container">
+            
+            <aside class="page-sidebar">
+                <h4>Navigation</h4>
+                <ul>
+                    <li><a href="#nature" class="active">1. Nature & Purpose</a></li>
+                    <li><a href="#science">2. Scientific Basis</a></li>
+                    <li><a href="#disclaimer">3. Medical Disclaimer</a></li>
+                    <li><a href="#responsibility">4. User Responsibilities</a></li>
+                    <li><a href="#liability">5. Limitation of Liability</a></li>
+                    <li><a href="#contact">6. Contact & Support</a></li>
+                </ul>
+            </aside>
+
+            <main class="content-area">
+                
+                <div class="content-section" id="nature">
+                    <h3>1. Nature & Purpose of HridyaCare</h3>
+                    <p>
+                        HridyaCare is designed to support <strong>wellness awareness, self-monitoring, and health education</strong>. 
+                        The platform utilizes the device's camera and flash to detect blood volume changes in the fingertip 
+                        to estimate physiological trends such as heart rate.
+                    </p>
+                    <p>
+                        The system is intended for <strong>informational and educational use</strong> 
+                        and should not be interpreted as a clinical, diagnostic, or therapeutic tool.
+                    </p>
+                </div>
+
+                <div class="content-section" id="science">
+                    <h3>2. Scientific Basis & Accuracy</h3>
+                    <p>
+                        HridyaCare utilizes <strong>Photoplethysmography (PPG)</strong>, 
+                        a non-invasive optical technique that detects volumetric changes in blood circulation 
+                        at the surface of the skin.
+                    </p>
+                    <div class="highlight-box">
+                        <p>
+                            Smartphone camera-based PPG estimates typically have a margin of error of 
+                            <strong>±5 to ±10 BPM</strong> compared to clinical-grade pulse oximeters.
+                        </p>
+                    </div>
+                    <p>Accuracy depends on proper usage and external variables:</p>
+                    <div class="two-column-list">
+                        <ul>
+                            <li><strong>Finger Placement:</strong> The index finger must fully cover the camera lens.</li>
+                            <li><strong>Flashlight Usage:</strong> The torch/flash is required to illuminate the capillary bed.</li>
+                            <li><strong>Pressure:</strong> Pressing too hard restricts blood flow, while pressing too lightly lets in external light.</li>
+                        </ul>
+                        <ul>
+                            <li><strong>Body Temperature:</strong> Cold fingers (vasoconstriction) may result in weak signals.</li>
+                            <li><strong>Stability:</strong> Excessive hand movement during the scan will distort the signal.</li>
+                            <li><strong>Environmental Light:</strong> Strong ambient light can interfere with the PPG signal.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="content-section" id="disclaimer">
+                    <h3>3. Medical & Clinical Disclaimer</h3>
+                    <div class="highlight-box disclaimer-box">
+                        <p>
+                            ⚠️ HridyaCare is <strong>not a medical device</strong>. It has not been clinically validated for 
+                            emergency assessment or treatment decisions. Never ignore professional medical advice 
+                            because of something you have read on this platform.
+                        </p>
+                    </div>
+                    <p>
+                        This platform is designed for wellness tracking and educational purposes only. 
+                        It should not be used to diagnose, treat, cure, or prevent any disease.
+                    </p>
+                </div>
+
+                <div class="content-section" id="responsibility">
+                    <h3>4. User Responsibilities</h3>
+                    <p>To ensure the most accurate results and safe usage:</p>
+                    <div class="two-column-list">
+                        <ul>
+                            <li>Gently place the tip of your index finger over the rear camera lens.</li>
+                            <li>Ensure the flashlight is ON during measurement (the app controls this automatically).</li>
+                            <li>Do not press hard; a light touch is sufficient to detect a pulse.</li>
+                            <li>Remain still and quiet for the duration of the scan (approx. 30 seconds).</li>
+                        </ul>
+                        <ul>
+                            <li>Warm your hands before measurement if they are cold.</li>
+                            <li>Use the data for personal wellness curiosity only.</li>
+                            <li>Do not use while driving or operating machinery.</li>
+                            <li>Consult healthcare professionals for medical concerns.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="content-section" id="liability">
+                    <h3>5. Limitation of Liability</h3>
+                    <p>
+                        To the maximum extent permitted by law, HridyaCare and its developers shall not be 
+                        liable for any harm, medical emergencies, or decisions made based on the 
+                        wellness insights provided by the software.
+                    </p>
+                    <p>
+                        This includes but is not limited to: direct, indirect, incidental, special, 
+                        consequential, or punitive damages arising from your use of or inability to use 
+                        the HridyaCare platform.
+                    </p>
+                </div>
+
+                <div class="content-section contact-section" id="contact">
+                    <h3>Have Questions?</h3>
+                    <p>For legal inquiries, data privacy concerns, or clarifications regarding these terms, please contact our support team directly.</p>
+                    <a href="mailto:hridyacare.webapp@gmail.com" class="primary-button">Email Support Team</a>
+                </div>
+
+                <div class="page-footer">
+                    © 2026 HridyaCare • Wellness Through Innovation
+                </div>
+
+            </main>
+        </div>
+    </div>
+</div>
+{% endblock %}

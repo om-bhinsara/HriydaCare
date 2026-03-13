@@ -1,0 +1,633 @@
+{% extends "layouts/base.html" %}
+
+{% block info_popup %}
+    <h3 style="color: #f43f5e; margin-top: 0;">🏠 Home Dashboard</h3>
+    <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.5;">
+        This is your daily health overview.
+    </p>
+    <ul style="color: #94a3b8; padding-left: 20px; font-size: 0.9rem;">
+        <li><strong>Quick Actions:</strong> Start a test immediately.</li>
+        <li><strong>Daily Stats:</strong> See today's summary at a glance.</li>
+    </ul>
+{% endblock %}
+
+{% block title %}HridyaCare | Smart Health Dashboard{% endblock %}
+
+{% block head %}
+<style>
+    /* --- DASHBOARD CARD STYLES --- */
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        width: 100%;
+    }
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px; 
+    }
+    .feature-card h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 700;
+        text-align: left;
+        color: #fff;
+    }
+
+    /* --- PREMIUM HELP BUTTON --- */
+    .help-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 12px;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+    }
+    .help-btn:hover {
+        background: #f43f5e;
+        border-color: #f43f5e;
+        color: white;
+        transform: scale(1.1);
+        box-shadow: 0 0 10px rgba(244, 63, 94, 0.4);
+    }
+
+.uni-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(8px);
+    z-index: 3000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px; /* important for phones */
+}
+
+.uni-modal-content {
+    width: 90%;
+    max-width: 500px;
+    max-height: 85vh;
+
+    background: #0f172a;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8);
+
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+ .uni-modal-scroll {
+    padding: 25px 25px 0px 25px; 
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+}
+
+    .uni-close-btn {
+        position: absolute; top: 15px; right: 15px;
+        width: 32px; height: 32px; border-radius: 50%;
+        background: rgba(255,255,255,0.1); border: none;
+        color: white; font-size: 18px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        z-index: 10; transition: background 0.2s;
+    }
+    .uni-close-btn:hover { background: #f43f5e; }
+
+    /* --- RICH UI STYLES --- */
+    .inst-header { text-align: center; margin-bottom: 20px; padding-top: 10px; }
+    .inst-title { font-size: 1.5rem; font-weight: 800; color: #fff; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .inst-subtitle { font-size: 0.9rem; color: #94a3b8; margin-top: 6px; }
+    
+    /* Progress Bar */
+    .inst-progress-wrap {
+        background: rgba(255,255,255,0.05); border-radius: 99px; height: 4px; overflow: hidden;
+        margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.08);
+    }
+    .inst-progress-bar {
+        height: 100%; width: 0%; background: linear-gradient(90deg, #f43f5e, #fb7185);
+        transition: width 0.4s ease;
+    }
+
+    /* Step Cards */
+    .step-card {
+        background: #1e293b; border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 20px; padding: 20px; margin-bottom: 16px;
+        display: flex; gap: 18px; opacity: 0.4;
+        transform: translateY(15px); transition: all 0.5s ease;
+    }
+    .step-card.active { 
+        opacity: 1; transform: translateY(0); 
+        border-color: rgba(255,255,255,0.2); 
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    
+    .step-number {
+        min-width: 42px; height: 42px; border-radius: 50%;
+        background: linear-gradient(135deg, #f43f5e, #be123c);
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; color: white; font-size: 18px; flex-shrink: 0;
+        box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);
+    }
+    .step-content h3 { margin: 0 0 6px; font-size: 16px; font-weight: 700; color: white; }
+    .step-content p { margin: 0; font-size: 14px; color: #94a3b8; line-height: 1.6; }
+
+    /* Video Card */
+    .video-card {
+        background: linear-gradient(180deg, #1e293b, #0f172a);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 20px; padding: 20px; margin: 30px 0;
+        text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .video-card h3 { margin-top: 0; font-size: 18px; color: #fff; font-weight: 700; }
+    
+    .video-wrapper {
+        position: relative; width: 100%; padding-top: 56.25%;
+        border-radius: 16px; overflow: hidden; margin-top: 16px;
+        box-shadow: 0 15px 40px -10px rgba(0,0,0,0.5);
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+    .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+
+    /* Accordion */
+    .accordion {
+        background: #1e293b; border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 20px; overflow: hidden; margin-top: 22px;
+    }
+    .accordion-header {
+        padding: 20px; display: flex; justify-content: space-between; align-items: center;
+        cursor: pointer; background: rgba(255,255,255,0.02);
+    }
+    .accordion-header h3 { margin: 0; font-size: 16px; font-weight: 600; color: #fff; }
+    .accordion-header span { font-size: 20px; font-weight: 300; color: #f43f5e; transition: transform 0.3s ease; }
+    .accordion-content {
+        max-height: 0; overflow: hidden; transition: max-height 0.4s ease; padding: 0 20px;
+    }
+    .accordion-content p { font-size: 14px; color: #94a3b8; line-height: 1.7; padding-bottom: 20px; }
+
+    /* Warning Card */
+    .warning-card {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 20px; padding: 20px; margin-top: 30px;
+    }
+    .warning-card h3 { margin-top: 0; color: #fca5a5; display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; }
+    .warning-card ul { padding-left: 20px; margin-bottom: 0; margin-top: 10px; }
+    .warning-card li { font-size: 14px; color: #e2e8f0; margin-bottom: 8px; line-height: 1.5; }
+
+    .modal-action-btn { 
+        margin-top: 24px; width: 100%; padding: 16px; 
+        border-radius: 16px; border: 1px solid #334155; 
+        background: transparent; color: #94a3b8; 
+        font-size: 15px; font-weight: 600; cursor: pointer; 
+        transition: all 0.2s ease; 
+        margin-bottom: 20px;
+    }
+    .modal-action-btn:hover { border-color: #fff; color: #fff; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes pulseIcon { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+    .pulse-icon { display: inline-block; animation: pulseIcon 1.5s infinite; color: #f43f5e; }
+/* --- PREMIUM ICON BOX --- */
+.icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 14px; /* Softer corners */
+    
+    /* Glass Effect */
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.feature-card:hover .icon-box {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Base Icon Styling */
+.icon-box svg {
+    width: 28px;
+    height: 28px;
+    stroke-width: 1.5;
+    fill: none;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); /* Depth shadow */
+}
+
+/* --- APPLY GRADIENTS TO SPECIFIC CARDS --- */
+/* Note: We use !important to override default colors */
+
+.card-heart .icon-box svg { stroke: url(#gradHeart) !important; }
+.card-heart .icon-box { background: linear-gradient(135deg, rgba(251, 113, 133, 0.1), rgba(225, 29, 72, 0.05)); }
+
+.card-stress .icon-box svg { stroke: url(#gradStress) !important; }
+.card-stress .icon-box { background: linear-gradient(135deg, rgba(192, 132, 252, 0.1), rgba(124, 58, 237, 0.05)); }
+
+.card-eye .icon-box svg { stroke: url(#gradEye) !important; }
+.card-eye .icon-box { background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(14, 165, 233, 0.05)); }
+
+.card-standard:nth-child(4) .icon-box svg { stroke: url(#gradPhysical) !important; }
+.card-standard:nth-child(4) .icon-box { background: linear-gradient(135deg, rgba(52, 211, 153, 0.1), rgba(5, 150, 105, 0.05)); }
+
+.card-standard:nth-child(5) .icon-box svg { stroke: url(#gradLife) !important; }
+.card-standard:nth-child(5) .icon-box { background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(217, 119, 6, 0.05)); }
+
+
+@media (max-width: 480px) {
+    .uni-modal-content {
+        width: 95%;
+        border-radius: 20px;
+    }
+}
+</style>
+
+{% endblock %}
+
+{% block content %}
+    <svg width="0" height="0" style="position: absolute; visibility: hidden;">
+  <defs>
+    <linearGradient id="gradHeart" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fb7185" />
+      <stop offset="100%" stop-color="#e11d48" />
+    </linearGradient>
+    
+    <linearGradient id="gradStress" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c084fc" />
+      <stop offset="100%" stop-color="#7c3aed" />
+    </linearGradient>
+    
+    <linearGradient id="gradEye" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#0ea5e9" />
+    </linearGradient>
+
+    <linearGradient id="gradPhysical" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+
+    <linearGradient id="gradLife" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+  </defs>
+</svg>
+    <div class="hero">
+        <div class="greeting-pill" id="greetingText">Hello there</div>
+        <h1>Your Health,<br><span>Simplified.</span></h1>
+        <p>Wellness Through Insights.</p>
+    </div>
+
+<div class="features-grid">
+
+    <div class="feature-card card-heart">
+        <div class="card-header">
+            <div class="header-left">
+                <div class="icon-box"><i data-lucide="activity"></i></div>
+                <h3>Heart Rate</h3>
+            </div>
+            <button class="help-btn" onclick="openHelp('heart')" title="How to measure?">?</button>
+        </div>
+        <p>Measure your pulse instantly using the camera & flash.</p>
+        <button class="action-btn btn-glow" onclick="startFreshMeasurement()">
+            <span>Measure Now</span> →
+        </button>
+    </div>
+
+    <div class="feature-card card-stress">
+        <div class="card-header">
+            <div class="header-left">
+                <div class="icon-box"><i data-lucide="brain-circuit"></i></div>
+                <h3>Stress Level</h3>
+            </div>
+            <button class="help-btn" onclick="openHelp('stress')" title="How it works?">?</button>
+        </div>
+        <p>Analyze HRV trends and psychological indicators.</p>
+        <button class="action-btn btn-glass" onclick="location.href='{{ url_for('stress_check') }}'">
+            Check Status
+        </button>
+    </div>
+
+        <div class="feature-card card-standard">
+        <div class="card-header">
+            <div class="header-left">
+                <div class="icon-box"><i data-lucide="sun-medium"></i></div>
+                <h3>Lifestyle</h3>
+            </div>
+            <button class="help-btn" onclick="openHelp('lifestyle')" title="Info">?</button>
+        </div>
+        <p>Track how sleep and habits impact your score.</p>
+        <button class="action-btn btn-glass" onclick="location.href='{{ url_for('lifestyle') }}'">
+            Insights
+        </button>
+    </div>
+    
+</div>
+
+    <div id="universalHelpModal" class="uni-modal-overlay">
+        <div class="uni-modal-content">
+            <button class="uni-close-btn" onclick="closeHelp()">&times;</button>
+            
+            <div class="uni-modal-scroll">
+                
+                <div id="modalContentArea"></div>
+
+                <button class="modal-action-btn" onclick="closeHelp()">Got it, thanks!</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="disclaimer">
+        <span style="font-size: 20px;">⚠️</span>
+        <p>HridyaCare provides wellness insights for awareness only. Consult a doctor for medical advice.</p>
+    </div>
+
+    {% if missing_med_info %}
+    <div id="medicationReminderModal" class="uni-modal-overlay" style="display: flex; align-items: center; justify-content: center;">
+        <div class="uni-modal-content" style="position: relative; padding: 25px; text-align: center;">
+            
+            <button class="uni-close-btn" onclick="closeMedModal()" style="top: 15px; right: 15px;">&times;</button>
+            
+            <div style="margin-bottom: 20px;">
+                <i data-lucide="shield-alert" style="width: 48px; height: 48px; color: #f59e0b; margin: 0 auto;"></i>
+            </div>
+            
+            <h3 style="color: #fff; font-size: 1.25rem; margin-bottom: 10px; font-weight: 700;">Action Required</h3>
+<p style="color: #94a3b8; font-size: 0.95rem; line-height: 1.5; margin-bottom: 25px;">
+    We noticed that some <strong>Medical Details</strong> are missing for you or your family members. Please update the profiles so we can provide accurate health insights.
+</p>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button class="action-btn btn-glow" onclick="window.location.href='{{ url_for('profile') }}'" style="margin: 0; width: 100%;">
+                    Update Profile Now
+                </button>
+                <button class="modal-action-btn" onclick="closeMedModal()" style="margin: 0; padding: 12px;">
+                    Remind Me Later
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+<script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // 1. Force clear any old memory from previous tests
+            sessionStorage.removeItem('medReminderDismissed'); 
+            
+            // 2. Always show the modal if the HTML renders it
+            document.getElementById('medicationReminderModal').style.display = 'flex';
+            lucide.createIcons();
+        });
+
+        function closeMedModal() {
+            // 3. Just hide it visually right now. (No memory saved!)
+            document.getElementById('medicationReminderModal').style.display = 'none';
+        }
+    </script>
+    {% endif %}
+    {% endblock %}
+
+{% block scripts %}
+<script>
+    function startFreshMeasurement() {
+        localStorage.removeItem("CARDIOSENSE_REPORT");
+        localStorage.removeItem("RESTORE_RESULT");
+        window.location.href = "{{ url_for('heart_rate') }}";
+    }
+
+    const contentStore = {
+        heart: `
+            <div class="inst-header">
+                <div class="inst-title"><span class="pulse-icon">❤️</span> Instructions</div>
+                <div class="inst-subtitle">Follow these steps for accurate results</div>
+            </div>
+
+            <div class="inst-progress-wrap">
+                <div class="inst-progress-bar" id="helpProgressBar"></div>
+            </div>
+
+            <div class="step-card help-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Relax before starting</h3>
+                    <p>Sit calmly for at least 5 minutes. Avoid activity, stress, or walking before measurement.</p>
+                </div>
+            </div>
+
+            <div class="step-card help-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Warm your finger</h3>
+                    <p>If your finger feels cold, gently rub your hands for 20–30 seconds to improve blood flow.</p>
+                </div>
+            </div>
+
+            <div class="step-card help-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Ensure good lighting</h3>
+                    <p>Stay in a well-lit area. If flash is used, do not cover the camera improperly.</p>
+                </div>
+            </div>
+
+            <div class="step-card help-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Keep still</h3>
+                    <p>Place your finger gently on the camera. Avoid movement, pressure, or talking.</p>
+                </div>
+            </div>
+
+            <div class="step-card help-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <h3>Wait for completion</h3>
+                    <p>Remain steady for 20–30 seconds until the progress indicator finishes.</p>
+                </div>
+            </div>
+
+            <div class="step-card help-step">
+                <div class="step-number">6</div>
+                <div class="step-content">
+                    <h3>Review trends</h3>
+                    <p>Single readings vary. Track multiple readings over time for meaningful insights.</p>
+                </div>
+            </div>
+
+            <div class="video-card">
+                <h3>🎥 Quick Demo</h3>
+                <p style="color:#94a3b8; font-size:13px; margin-bottom: 10px;">
+                    Correct finger placement and posture demonstration
+                </p>
+                <div class="video-wrapper">
+                    <iframe src="https://www.youtube.com/embed/gJHeG6KEVZU" frameborder="0" allowfullscreen></iframe>
+                </div>
+            </div>
+
+            <div class="accordion">
+                <div class="accordion-header" onclick="toggleAccordion()">
+                    <h3>🧠 Why these steps improve accuracy</h3>
+                    <span id="accIcon">+</span>
+                </div>
+                <div class="accordion-content" id="accordionContent">
+                    <p>
+                        Camera-based rPPG detects tiny color changes caused by blood flow.
+                        Movement, cold skin, stress, and poor lighting reduce signal quality.
+                        These steps improve signal stability and accuracy.
+                    </p>
+                </div>
+            </div>
+
+            <div class="warning-card">
+                <h3>🩺 When NOT to measure</h3>
+                <ul>
+                    <li>Immediately after exercise</li>
+                    <li>When hands are extremely cold or shaking</li>
+                    <li>During fever, illness, or dehydration</li>
+                    <li>While walking, talking, or lying down</li>
+                    <li>If camera lens is dirty or damaged</li>
+                </ul>
+            </div>
+        `,
+        stress: `
+            <div class="inst-header">
+                <div class="inst-title"><span class="pulse-icon">🧠</span> Stress Guide</div>
+                <div class="inst-subtitle">How we calculate your score</div>
+            </div>
+            <div class="step-card active">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Answer Honestly</h3>
+                    <p>We use a standard psychological survey to gauge your perceived stress levels.</p>
+                </div>
+            </div>
+            <div class="step-card active">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Check HRV</h3>
+                    <p>If available, we correlate this with Heart Rate Variability data for physiological insights.</p>
+                </div>
+            </div>
+            <div class="warning-card">
+                <h3>🩺 Note</h3>
+                <ul>
+                    <li>This is not a clinical diagnosis for anxiety or depression.</li>
+                    <li>Use this tool to track trends over time.</li>
+                </ul>
+            </div>
+        `
+    };
+
+    // --- MODAL LOGIC ---
+    let animTimer = null;
+    let stepIndex = 0;
+
+    function openHelp(type) {
+        // 1. Inject specific HTML content
+        const contentArea = document.getElementById('modalContentArea');
+        contentArea.innerHTML = contentStore[type] || "<p>Content loading...</p>";
+
+        // 2. Show Modal
+        document.getElementById('universalHelpModal').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+
+        // 3. Trigger Animations ONLY if it's the Heart Rate feature (since it has the progress bar)
+        if(type === 'heart') {
+            document.getElementById('helpProgressBar').style.width = '0%';
+            stepIndex = 0;
+            runAnimation();
+        }
+    }
+
+    function closeHelp() {
+        document.getElementById('universalHelpModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
+        
+        // Stop video if playing
+        const iframe = document.querySelector('#modalContentArea iframe');
+        if(iframe) iframe.src = iframe.src; 
+        
+        clearTimeout(animTimer);
+    }
+
+    function runAnimation() {
+        const steps = document.querySelectorAll('.help-step');
+        if (steps.length > 0 && stepIndex < steps.length) {
+            steps[stepIndex].classList.add('active');
+            
+            const bar = document.getElementById('helpProgressBar');
+            if(bar) bar.style.width = ((stepIndex + 1) / steps.length) * 100 + '%';
+            
+            stepIndex++;
+            animTimer = setTimeout(runAnimation, 400);
+        }
+    }
+
+    // Accordion Logic (Global function needed because HTML is injected dynamically)
+    window.toggleAccordion = function() {
+        const content = document.getElementById('accordionContent');
+        const icon = document.getElementById('accIcon');
+        if(!content) return;
+        
+        if (content.style.maxHeight) {
+            content.style.maxHeight = null;
+            icon.innerText = '+';
+            icon.style.transform = 'rotate(0deg)';
+        } else {
+            content.style.maxHeight = content.scrollHeight + 'px';
+            icon.innerText = '−';
+            icon.style.transform = 'rotate(180deg)';
+        }
+    };
+
+    // --- GREETING ---
+    document.addEventListener("DOMContentLoaded", () => {
+        const hour = new Date().getHours();
+        const greetingEl = document.getElementById("greetingText");
+        let greeting = "Welcome";
+        const username = "{{ session.get('username', '') }}"; 
+        
+        if (hour < 12) greeting = "Good Morning";
+        else if (hour < 18) greeting = "Good Afternoon";
+        else greeting = "Good Evening";
+
+        if(username) {
+            greetingEl.innerText = `${greeting}, ${username}`;
+        } else {
+            greetingEl.innerText = `${greeting}`;
+        }
+    });
+
+</script>
+
+<script>
+    // 1. Tell browser not to restore scroll position automatically
+    if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
+
+    // 2. Force scroll to top immediately
+    window.scrollTo(0, 0);
+</script>
+
+{% endblock %}

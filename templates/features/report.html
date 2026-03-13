@@ -1,0 +1,503 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Health Report | HridyaCare{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+/* ================= GLOBAL THEME ================= */
+* { font-family: "Outfit", "Segoe UI", system-ui, sans-serif; }
+
+body {
+    background: #0f172a !important; /* Base color */
+    background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%) !important;
+    background-attachment: fixed;
+}
+:root {
+    --primary: #f43f5e; 
+    --primary-hover: #ff4769;
+    --card-bg: linear-gradient(145deg, #1e293b, #0f172a); 
+    --card-border: rgba(255, 255, 255, 0.08);
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    --text-muted: #94a3b8;
+    --success: #10b981;
+}
+
+/* ================= COMPONENT STYLING ================= */
+.report-card, .card {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    box-shadow: var(--card-shadow);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.page-header { display: flex; justify-content: center; margin-bottom: 25px; }
+.page-title { font-size: 28px; font-weight: 800; color: #fff; }
+
+.section { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.section:last-child { border-bottom: none; }
+
+.row { display: flex; justify-content: space-between; margin: 8px 0; align-items: center; }
+.row span:first-child { color: var(--text-muted); font-weight: 500; }
+.row span:last-child { color: #fff; font-weight: 700; text-align: right; }
+
+.impact-box {
+    margin-top: 15px; padding: 14px; border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center; font-weight: 700; font-size: 1.1rem;
+}
+
+.message { margin-top: 10px; font-size: 0.9rem; color: #cbd5e1; text-align: center; font-style: italic; }
+
+/* Stats Grid */
+.stats-grid { display: flex; justify-content: space-between; text-align: center; margin-bottom: 20px; }
+.stat-item { flex: 1; }
+.stat-item h3 { color: #fff; font-size: 22px; margin: 0; font-weight: 800; }
+.stat-item p { color: var(--text-muted); font-size: 12px; margin-top: 4px; font-weight: 600; text-transform: uppercase; }
+.stat-divider { width: 1px; height: 30px; background: rgba(255,255,255,0.1); }
+
+/* Table Styling */
+.table-wrapper { overflow-x: auto; margin-top: 10px; }
+.hr-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.hr-table th {
+    color: #cbd5e1;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 12px; text-align: left; font-size: 0.75rem; font-weight: 600;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-transform: uppercase;
+}
+.hr-table td { padding: 14px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #e2e8f0; font-weight: 500; }
+
+/* Buttons */
+.actions { display: flex; flex-direction: column; gap: 14px; }
+.btn-action {
+    width: 100%; padding: 16px; border-radius: 16px; font-size: 1rem; font-weight: 700;
+    cursor: pointer; border: none; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; justify-content: center; align-items: center; gap: 10px;
+}
+.pdf-btn { background: linear-gradient(135deg, #f43f5e, #be123c); color: #fff; box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3); }
+.wa-btn { background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+.back-btn-action { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); }
+.btn-action:hover { transform: translateY(-3px); opacity: 0.9; }
+
+/* Disclaimer */
+.disclaimer {
+    margin-top: 40px; padding: 18px; border-radius: 16px;
+    background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+}
+.disclaimer-icon { color: #fbbf24; font-size: 1.2rem; }
+.disclaimer-text { font-size: 0.78rem; color: #94a3b8; line-height: 1.6; }
+.disclaimer-text b { color: #e2e8f0; font-weight: 700; }
+
+/* Toast Styling */
+#downloadToast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #10b981; /* Success Green */
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    z-index: 9999;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    opacity: 0;
+    visibility: hidden;
+}
+
+#downloadToast.show {
+    opacity: 1;
+    visibility: visible;
+    bottom: 50px;
+}
+
+.toast-hidden { opacity: 0; visibility: hidden; }
+
+
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <div class="page-title">Detailed Report</div>
+    </div>
+
+    <div class="report-card">
+        <div class="section" style="padding-top:0;">
+            <div class="row"><span>User</span><span id="r-name">--</span></div>
+            <div class="row"><span>Age / City</span><span id="r-details">--</span></div>
+            <div class="row"><span>Measured At</span><span id="r-time" style="color:#cbd5e1;">--</span></div>
+        </div>
+        <div class="section">
+            <div class="row"><span>Heart Rate</span><span id="r-bpm" style="font-size:1.3rem; color:var(--primary);">--</span></div>
+            <div class="row"><span>AQI Level</span><span id="r-aqi">--</span></div>
+            <div class="row"><span>PM2.5 / PM10</span><span id="r-pm">--</span></div>
+        </div>
+        <div class="section" style="border:none; padding-bottom:0;">
+            <div id="impact-box" class="impact-box">
+                <span id="r-impact">Analyzing...</span>
+            </div>
+            <p id="r-message" class="message"></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom:15px; color:#fff; font-size:18px; font-weight:700;">
+            <i class="fa-solid fa-chart-line" style="margin-right:8px; color:var(--primary);"></i> Heart Rate Trends
+        </h3>
+        <div class="stats-grid">
+            <div class="stat-item"><h3 id="avgBpm">--</h3><p>AVG BPM</p></div>
+            <div class="stat-divider"></div>
+            <div class="stat-item"><h3 id="maxBpm">--</h3><p>MAX</p></div>
+            <div class="stat-divider"></div>
+            <div class="stat-item"><h3 id="minBpm">--</h3><p>MIN</p></div>
+        </div>
+        <div style="height: 250px; position: relative; margin-top: 20px;">
+            <canvas id="heartRateChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom:15px; color:#fff; font-size:18px; font-weight:700;">
+            <i class="fa-solid fa-heart-pulse" style="margin-right:8px; color:var(--primary);"></i> Last 7 Measurements
+        </h3>
+        <div class="table-wrapper">
+            <table class="hr-table">
+                <thead><tr><th>Date</th><th>Time</th><th>BPM</th><th>Status</th></tr></thead>
+                <tbody id="heartRateTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="btn-action pdf-btn" onclick="generatePDF()">
+            <i class="fa-solid fa-file-pdf"></i> Download PDF Report
+        </button>
+        <button class="btn-action wa-btn" onclick="sendWhatsApp()">
+            <i class="fa-brands fa-whatsapp"></i> Share via WhatsApp
+        </button>
+        <button class="btn-action back-btn-action" onclick="backToAnalysis()">
+            <i class="fa-solid fa-chevron-left"></i> Back to Analysis
+        </button>
+        <button class="btn-action back-btn-action" onclick="scanAgain()">
+            <i class="fa-solid fa-rotate"></i> Start New Scan
+        </button>
+        <button class="btn-action back-btn-action" onclick="copyReport()">
+    <i class="fa-solid fa-copy"></i> Copy Report Text
+</button>
+    </div>
+
+    <div class="disclaimer">
+        <i class="fa-solid fa-circle-info disclaimer-icon"></i>
+        <div class="disclaimer-text">
+            This is a camera-based estimation <b>(PPG)</b>.
+            <br>
+            Data is for wellness awareness only, not medical diagnosis.
+        </div>
+    </div>
+
+    <div id="downloadToast" class="toast-hidden">
+        <i class="fa-solid fa-circle-check"></i>
+        <span>Report Downloaded Successfully!</span>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const LOGGED_IN_USER = "{{ username }}";
+    // Global variable to store history for the PDF generator
+    window.reportHistory = []; 
+
+    function parseDateString(str) {
+        if (!str) return { date: "--", time: "--" };
+        const parts = str.split(' ');
+        if (parts.length >= 5) {
+            return {
+                date: `${parts[0]} ${parts[1]} ${parts[2]}`, 
+                time: `${parts[3]} ${parts[4]}` 
+            };
+        }
+        const dateObj = new Date(str);
+        if (!isNaN(dateObj.getTime())) {
+            return {
+                date: dateObj.toLocaleDateString('en-US', {day:'numeric', month:'short'}),
+                time: dateObj.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'})
+            };
+        }
+        return { date: str, time: "" };
+    }
+
+    function backToAnalysis() {
+        localStorage.setItem("RESTORE_RESULT", "1");
+        window.location.href = "{{ url_for('heart_rate') }}";
+    }
+
+    function scanAgain() {
+        localStorage.removeItem("CARDIOSENSE_REPORT");
+        localStorage.removeItem("RESTORE_RESULT");
+        window.location.href = "{{ url_for('heart_rate') }}";
+    }
+
+    function getAQICategory(aqi) {
+        if (aqi <= 50) return { label: "Good", color: "#22c55e" };
+        if (aqi <= 100) return { label: "Moderate", color: "#eab308" };
+        if (aqi <= 150) return { label: "Sensitive", color: "#f97316" };
+        if (aqi <= 200) return { label: "Unhealthy", color: "#ef4444" };
+        return { label: "Hazardous", color: "#7c2d12" };
+    }
+
+    // --- MAIN LOADING LOGIC ---
+    document.addEventListener("DOMContentLoaded", () => {
+        const reportRaw = localStorage.getItem("CARDIOSENSE_REPORT");
+        if (reportRaw) {
+            const report = JSON.parse(reportRaw);
+
+            // --- CLEAN DISPLAY LOGIC ---
+            let displayName = "";
+            if (!report.relationship || report.relationship.toLowerCase() === "self") {
+                displayName = "Self";
+            } else {
+                displayName = report.member_name;
+            }
+
+            document.getElementById("r-name").innerText = displayName;
+            document.getElementById("r-details").innerText = `${report.age} yrs • ${report.city}`;
+            const t = parseDateString(report.timestamp);
+            document.getElementById("r-time").innerText = `${t.date} • ${t.time}`;
+            document.getElementById("r-bpm").innerText = report.bpm + " BPM";
+            
+            const aqiInfo = getAQICategory(report.aqi);
+            const aqiEl = document.getElementById("r-aqi");
+            aqiEl.innerHTML = `<span style="color:${aqiInfo.color}">${report.aqi}</span> <small style="color:#94a3b8">(${aqiInfo.label})</small>`;
+            
+            document.getElementById("r-pm").innerText = `${report.pm25 || '-'} / ${report.pm10 || '-'}`;
+            document.getElementById("r-impact").innerText = report.impactCategory;
+            document.getElementById("r-message").innerText = report.message;
+            
+            const box = document.getElementById("impact-box");
+            let impactColor = "#22c55e";
+            if (report.impactCategory.includes("High") || report.aqi > 150) impactColor = "#ef4444";
+            else if (report.impactCategory.includes("Moderate")) impactColor = "#f97316";
+            box.style.borderColor = impactColor;
+            box.style.color = impactColor;
+        }
+
+        const memberId = localStorage.getItem("HCARE_MEMBER_ID");
+        
+        if(memberId) {
+            fetch(`/api/heart-rate/last-7?member_id=${memberId}`)
+              .then(res => res.json())
+              .then(data => {
+                  if (!data || data.length === 0) {
+                      document.getElementById('heartRateChart').style.display = "none";
+                      return;
+                  }
+
+                  // SAVE DATA FOR PDF GENERATION
+                  window.reportHistory = data;
+
+                  const bpmValues = data.map(d => d.bpm);
+                  document.getElementById('avgBpm').innerText = Math.round(bpmValues.reduce((a,b)=>a+b,0)/bpmValues.length);
+                  document.getElementById('maxBpm').innerText = Math.max(...bpmValues);
+                  document.getElementById('minBpm').innerText = Math.min(...bpmValues);
+
+                  const tbody = document.getElementById('heartRateTable');
+                  tbody.innerHTML = '';
+                  data.forEach((item) => {
+                      const dt = parseDateString(item.time);
+                      let status = item.bpm > 100 ? "High" : (item.bpm < 60 ? "Low" : "Normal");
+                      let color = item.bpm > 100 ? "#ef4444" : (item.bpm < 60 ? "#3b82f6" : "#22c55e");
+                      tbody.innerHTML += `
+                          <tr>
+                              <td>${dt.date}</td>
+                              <td style="color:#94a3b8">${dt.time}</td>
+                              <td style="font-weight:700; font-size:1rem;">${item.bpm}</td>
+                              <td><div class="status-cell"><span class="status-dot" style="background:${color}; width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:8px;"></span>${status}</div></td>
+                          </tr>`;
+                  });
+
+                  const graphData = [...data].reverse();
+                  const labels = graphData.map(d => {
+                      const dt = parseDateString(d.time);
+                      return `${dt.date.split(' ')[0]} ${dt.date.split(' ')[1]}`; 
+                  });
+                  const points = graphData.map(d => d.bpm);
+
+                  new Chart(document.getElementById('heartRateChart'), {
+                      type: 'bar',
+                      data: {
+                          labels: labels,
+                          datasets: [{
+                              label: 'Heart Rate',
+                              data: points,
+                              backgroundColor: 'rgba(244, 63, 94, 0.85)',
+                              borderRadius: 8,
+                              barThickness: 20
+                          }]
+                      },
+                      options: {
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: { legend: { display: false } },
+                          scales: {
+                              x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+                              y: { grid: { color: 'rgba(255,255,255,0.05)' }, suggestedMin: 40, ticks: { color: '#94a3b8', font: { size: 11 } } }
+                          }
+                      }
+                  });
+              });
+        }
+    });
+
+    // --- FIXED PDF GENERATION FUNCTION ---
+    async function generatePDF() {
+        // 1. Get data from LocalStorage (since currentReportData is undefined)
+        const reportRaw = localStorage.getItem("CARDIOSENSE_REPORT");
+        if (!reportRaw) {
+            alert("No report data found. Please perform a scan first.");
+            return;
+        }
+        const report = JSON.parse(reportRaw);
+        
+        const btn = document.querySelector(".pdf-btn");
+        const originalText = btn.innerHTML;
+        btn.disabled = true; 
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+
+        try {
+            // 2. Construct Payload using the 'report' object from localStorage
+            const isSelf = (!report.relationship || report.relationship.toLowerCase() === "self");
+            
+            const payload = {
+                // Determine Name
+                name: isSelf ? "Self" : (report.member_name || "User"),
+                
+                // Basic Details
+                city: report.city || "N/A",
+                age: report.age || "N/A",
+                
+                // Measurement Data
+                bpm: report.bpm,
+                aqi: report.aqi || 0,
+                pm25: report.pm25 || 0,
+                pm10: report.pm10 || 0,
+                
+                // Get Impact directly from the DOM to ensure it matches what the user sees
+                impactCategory: document.getElementById("r-impact").innerText,
+                
+                timestamp: report.timestamp,
+                
+                // Use global history variable populated on load
+                history: window.reportHistory || []
+            };
+
+            const response = await fetch("/generate-pdf", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if(!response.ok) throw new Error("Server failed");
+
+            const data = await response.json(); 
+
+            // Download Logic
+            const fileRes = await fetch(data.pdf_url);
+            const blob = await fileRes.blob();
+            const url = window.URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `HridyaCare_Report_${Date.now()}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            showToast();
+
+        } catch (error) {
+            console.error(error);
+            alert("Error generating PDF. Please try again.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    function showToast() {
+        const toast = document.getElementById("downloadToast");
+        toast.classList.add("show");
+        setTimeout(() => {
+            toast.classList.remove("show");
+        }, 3000); 
+    }
+
+    function getCleanName(report) {
+        if (!report.relationship || report.relationship.toLowerCase() === "self") {
+            return "Self";
+        }
+        return report.member_name;
+    }
+
+    function copyReport() {
+        const report = JSON.parse(localStorage.getItem("CARDIOSENSE_REPORT"));
+        if (!report) return;
+        
+        const t = parseDateString(report.timestamp);
+        const displayName = getCleanName(report);
+        
+        const text = `HridyaCare Health Report\n` +
+                     `--------------------------\n` +
+                     `👤 User: ${displayName}\n` +
+                     `❤️ Heart Rate: ${report.bpm} BPM\n` +
+                     `📍 City: ${report.city}\n` +
+                     `📅 Measured: ${t.date} ${t.time}\n` +
+                     `--------------------------\n` +
+                     `Generated by HridyaCare`;
+
+        navigator.clipboard.writeText(text).then(() => {
+            const toast = document.getElementById("downloadToast");
+            const originalText = toast.querySelector("span").innerText;
+            toast.querySelector("span").innerText = "Report Copied to Clipboard!";
+            showToast();
+            // Reset text after toast hides
+            setTimeout(() => {
+                 toast.querySelector("span").innerText = originalText;
+            }, 3500);
+        });
+    }
+
+    function sendWhatsApp() {
+        const phoneInput = prompt("Enter 10-digit WhatsApp number:");
+        if (!phoneInput) return;
+        const clean = phoneInput.replace(/\D/g, "");
+        if (clean.length !== 10) { alert("Invalid number"); return; }
+        
+        const report = JSON.parse(localStorage.getItem("CARDIOSENSE_REPORT"));
+        if (!report) { alert("No report data found."); return; }
+
+        const t = parseDateString(report.timestamp);
+        const displayName = getCleanName(report);
+
+        const msg = `*HridyaCare Text Report*\n\n👤 User: ${displayName}\n❤️ Heart Rate: ${report.bpm} BPM\n📍 City: ${report.city}\nMeasured: ${t.date} ${t.time}`;
+        
+        window.open(`https://wa.me/91${clean}?text=${encodeURIComponent(msg)}`, "_blank");
+    }
+</script>
+{% endblock %}

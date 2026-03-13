@@ -1,0 +1,832 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Heart Rate Monitor | HridyaCare{% endblock %}
+
+{% block head %}
+<style>
+    :root {
+        /* KEEPING YOUR SIZE CONFIGURATION */
+        --ring-len: 565.48; 
+        --ring-color: #06b6d4; 
+        --primary-glow: rgba(244, 63, 94, 0.4);
+        --bg-panel: rgba(30, 41, 59, 0.7);
+        --bg-dark-panel: rgba(15, 23, 42, 0.95);
+        --text-muted: #94a3b8;
+        --text-light: #cbd5e1;
+    }
+
+    /* --- UTILITIES --- */
+    .hidden { display: none; } 
+    .text-center { text-align: center; }
+    .text-left { text-align: left; }
+    .w-full { width: 100%; }
+    .mt-4 { margin-top: 20px; }
+    
+    /* --- ANIMATIONS --- */
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideInFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); } }
+
+    /* --- COMPONENTS --- */
+    .spinner {
+        width: 40px; height: 40px;
+        border: 4px solid rgba(255, 255, 255, 0.1);
+        border-left-color: #f43f5e;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 15px auto;
+    }
+
+    .spinner-container {
+        text-align: center;
+        padding: 40px 0;
+    }
+
+    /* --- STEP CONTAINER --- */
+    .step-container {
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 75vh;
+        width: 100%;
+        animation: fadeIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        padding-bottom: 40px;
+    }
+    .step-container.active { display: flex; }
+    .step-content { width: 100%; max-width: 420px; text-align: left; }
+
+    /* --- TYPOGRAPHY --- */
+    h2 { 
+        font-size: 2rem; font-weight: 800; color: #fff; 
+        margin-bottom: 0.5rem; text-align: center; letter-spacing: -0.02em;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    p { color: var(--text-muted); line-height: 1.6; font-size: 1.05rem; margin-top: 0; text-align: center; margin-bottom: 35px; }
+
+    /* --- MEMBER CARDS --- */
+    #family-list { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
+    
+    .member-card {
+        display: flex; align-items: center; padding: 16px 20px;
+        background: var(--bg-panel);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px; cursor: pointer; transition: all 0.2s ease;
+        position: relative; overflow: hidden;
+        opacity: 0; /* For animation */
+        animation: slideInFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+    .member-card:hover { background: rgba(30, 41, 59, 0.95); border-color: rgba(255, 255, 255, 0.2); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3); }
+    .member-card.is-self { background: linear-gradient(145deg, rgba(244, 63, 94, 0.1), rgba(30, 41, 59, 0.6)); border: 1px solid rgba(244, 63, 94, 0.3); }
+    .member-card.is-self:hover { box-shadow: 0 8px 30px rgba(244, 63, 94, 0.15); }
+
+    .member-avatar {
+        width: 48px; height: 48px; border-radius: 50%;
+        background: #0f172a; display: flex; align-items: center; justify-content: center;
+        font-size: 20px; margin-right: 18px; color: var(--text-light);
+        border: 2px solid rgba(255,255,255,0.05); flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    .member-card.is-self .member-avatar {
+        background: linear-gradient(135deg, #f43f5e, #e11d48); color: white; border-color: transparent;
+        box-shadow: 0 0 15px var(--primary-glow); animation: pulse-red 2s infinite;
+    }
+
+    .member-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .member-name { font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 2px; }
+    .member-relation { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+    /* --- BUTTONS --- */
+    .delete-btn {
+        position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+        width: 34px; height: 34px; border-radius: 10px;
+        background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.2s ease; z-index: 20; color: #64748b; 
+    }
+    .delete-btn:hover { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #ef4444; }
+    .delete-btn svg { width: 16px; height: 16px; }
+
+    .btn-add-new {
+        width: 100%; padding: 16px; margin-top: 20px;
+        border: 2px dashed rgba(255, 255, 255, 0.12); border-radius: 18px;
+        background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;
+        transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 0.95rem;
+    }
+    .btn-add-new:hover { background: rgba(255, 255, 255, 0.03); border-color: var(--text-light); color: #f1f5f9; }
+
+    .btn {
+        background: linear-gradient(135deg, #f43f5e, #e11d48); color: white; border: none; padding: 18px;
+        border-radius: 16px; font-size: 1rem; font-weight: 700; cursor: pointer;
+        width: 100%; box-shadow: 0 8px 20px -5px rgba(244, 63, 94, 0.4);
+        transition: transform 0.2s, box-shadow 0.2s; margin-top: 25px;
+        display: flex; align-items: center; justify-content: center; gap: 8px; letter-spacing: 0.5px;
+    }
+    .btn:hover { box-shadow: 0 12px 30px -5px rgba(244, 63, 94, 0.6); transform: translateY(-2px); }
+    .btn:active { transform: scale(0.98); }
+    
+    .btn-outline {
+        background: transparent !important; border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow: none !important; color: var(--text-light) !important; font-weight: 600;
+    }
+    .btn-outline:hover { border-color: white !important; color: white !important; background: rgba(255,255,255,0.05) !important; }
+
+    .back-btn {
+        background: none; border: none; color: #64748b; font-size: 0.9rem;
+        cursor: pointer; margin: 25px auto 0 auto; padding: 10px; 
+        display: block; font-weight: 600; text-align: center; transition: color 0.2s;
+    }
+    .back-btn:hover { color: #f8fafc; }
+
+    /* --- FORMS --- */
+    input, select {
+        width: 100%; padding: 16px; background: rgba(15, 23, 42, 0.6); 
+        border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; color: white; font-size: 1.1rem; 
+        outline: none; margin-top: 15px; text-align: center; transition: all 0.2s;
+    }
+    input:focus, select:focus {
+        border-color: var(--ring-color); background: rgba(15, 23, 42, 0.9);
+        box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.1);
+    }
+    .form-panel input, .form-panel select { text-align: left; padding-left: 20px; }
+
+    .form-panel {
+        display: none; margin-top: 20px; 
+        background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); 
+        padding: 24px; border-radius: 24px; 
+        border: 1px solid rgba(255,255,255,0.1); 
+        animation: fadeIn 0.3s ease;
+    }
+
+    .suggestions-list {
+        list-style: none; margin: 4px auto 0; padding: 0;
+        border-radius: 14px; max-height: 180px; overflow-y: auto;
+        background: #1e293b; border: 1px solid rgba(255,255,255,0.1);
+        z-index: 100; width: 100%; text-align: left;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .suggestions-list li { padding: 12px 18px; cursor: pointer; color: var(--text-light); border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem; }
+    .suggestions-list li:hover { background: var(--ring-color); color: white; }
+
+    /* --- MONITOR UI --- */
+    .monitor-ui { display: flex; flex-direction: column; align-items: center; width: 100%; }
+    
+    .status-bar { 
+        display: flex; justify-content: center; align-items: center;     
+        position: relative; width: 100%; max-width: 340px; min-height: 70px;
+        color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px; font-weight: 600;
+        background: rgba(255,255,255,0.05); padding: 0; border-radius: 20px; line-height: 1.4;
+    }
+
+    #live-badge { 
+        position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
+        color: var(--ring-color); font-weight: 700; opacity: 0; 
+        display: flex; align-items: center; gap: 6px; font-size: 0.75rem; 
+    }
+    #live-badge::before { 
+        content:''; display:block; width:8px; height:8px; 
+        border-radius:50%; background:var(--ring-color); box-shadow: 0 0 10px var(--ring-color); 
+    }
+
+    #message-box { z-index: 1; width: 100%; text-align: center; padding: 0 60px; }
+    .status-bar.mode-measuring { justify-content: flex-end; padding-right: 20px; }
+    .status-bar.mode-measuring #message-box { text-align: right; max-width: 65%; padding: 0; }
+
+    /* CAMERA & RING CONTAINER */
+    #cam-container { 
+        width: 200px; height: 200px;
+        border-radius: 50%; 
+        position: relative; 
+        display: flex; align-items: center; justify-content: center; 
+        background: #000; margin: 15px 0; 
+        box-shadow: 0 0 50px rgba(0,0,0,0.6); 
+        border: 4px solid #1e293b; 
+    }
+    #video { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; opacity: 0.6; }
+    
+    /* RING STYLES */
+    .progress-ring { 
+        position: absolute; 
+        inset: 0;         
+        width: 100%;      
+        height: 100%;     
+        margin: auto;     
+        /* FIXED: Starts at 12 o'clock, rotates Clockwise */
+        transform: rotate(-90deg); 
+        transform-origin: 50% 50%; /* Ensures it spins around exact center */
+        pointer-events: none; 
+        z-index: 10; 
+    }
+
+    .ring-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 5; }
+    
+    .ring-fill { 
+        fill: none; stroke: var(--ring-color); stroke-width: 5; 
+        stroke-linecap: round; 
+        stroke-dasharray: var(--ring-len); 
+        /* FIXED: Starts Completely Hidden (Empty) */
+        stroke-dashoffset: var(--ring-len); 
+        transition: stroke-dashoffset 0.1s linear; 
+        filter: drop-shadow(0 0 8px var(--ring-color)); 
+    }
+    
+    .overlay-center { position: absolute; z-index: 20; text-align: center; display: none; }
+    #countdown { font-size: 3rem; font-weight: 800; color: white; text-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    #overlay-label { font-size: 0.9rem; font-weight: 700; color: var(--ring-color); letter-spacing: 2px; text-transform: uppercase; }
+    
+    .graph-container { 
+        width: 100%; max-width: 400px; height: 120px; background: #0f172a; 
+        border-radius: 16px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; 
+        background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 20px 20px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+    }
+    #graph { width: 100%; height: 100%; display: block; mix-blend-mode: screen; }
+    
+    .bpm-box { text-align: center; margin-bottom: 15px; width: 100%; max-width: 400px;}
+    .measure-percent { font-size: 3rem; font-weight: 800; color: white; margin-bottom: 5px; letter-spacing: -1px; }
+
+    /* --- RESULTS & REPORT --- */
+    #step-5 .step-content { max-width: 100%; text-align: left; }
+    #grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    
+    .stat-box { 
+        background: var(--bg-panel); backdrop-filter: blur(10px);
+        padding: 24px 16px; border-radius: 20px; text-align: center; 
+        border: 1px solid rgba(255,255,255,0.05); 
+        display: flex; flex-direction: column; justify-content: center; align-items: center; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .stat-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .stat-val { font-size: 2.5rem; font-weight: 800; color: white; line-height: 1; display: flex; align-items: baseline; gap: 6px; justify-content: center; }
+    .aqi-unit { font-size: 0.9rem; color: #64748b; font-weight: 600; }
+    
+    #impact-container { align-items: center; justify-content: center; background: linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, rgba(15, 23, 42, 0.9) 100%); margin-bottom: 20px; }
+    .impact-badge { font-size: 1.5rem; font-weight: 800; color: white; margin-top: 4px; letter-spacing: 0.5px; }
+    .impact-sub { font-size: 0.9rem; color: var(--text-muted); margin-top: 5px; }
+
+    /* Result Messages */
+    .msg-box { padding: 20px; border-radius: 16px; font-size: 0.95rem; text-align: left; line-height: 1.5; margin-top: 18px; }
+    .msg-cyan { background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); color: #cffafe; }
+    .msg-green { background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); color: #86efac; }
+    .msg-yellow { background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.2); color: #fef08a; }
+    
+    .msg-title { font-size: 0.95rem; font-weight: 700; color: #facc15; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+
+    /* --- POPUP OVERLAY --- */
+    .popup-overlay {
+        display: none; position: fixed; inset: 0; 
+        background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); 
+        z-index: 9999; align-items: center; justify-content: center;
+    }
+    .popup-content {
+        background: var(--bg-dark-panel); padding: 24px; border-radius: 24px; 
+        width: 90%; max-width: 360px; 
+        border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+    }
+    .popup-input-wrapper { position: relative; }
+    .popup-suggestions { position: absolute; top: 100%; left: 0; width: 100%; z-index: 10000; max-height: 150px; overflow-y: auto; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="main-app w-full" style="max-width:100%;">
+
+    <input type="hidden" id="selected-member-id" value="">
+
+    <div id="step-family" class="step-container active">
+        <div class="step-content">
+            <h2>Who is measuring?</h2>
+            <p>Select the profile for this heart rate check.</p>
+
+            <div id="family-list">
+                <div class="spinner-container">
+                    <div class="spinner"></div>
+                    <p class="text-muted">Loading profiles...</p>
+                </div>
+            </div>
+
+            <button id="btn-show-add-member" class="btn-add-new" onclick="showAddMemberForm()">
+                <span style="font-size:22px; line-height:1;">+</span> Add New Member
+            </button>
+
+            <div id="add-member-form" class="form-panel">
+                <h3 class="text-center" style="color:white; font-size:1.1rem; margin-bottom:5px; font-weight:700;">New Profile Details</h3>
+                <input type="text" id="new-member-name" placeholder="Enter Name (e.g. Rajesh)" autocomplete="off">
+                <select id="new-member-relation">
+                    <option value="" disabled selected>Select Relationship</option>
+                    <option value="Father">Father</option>
+                    <option value="Mother">Mother</option>
+                    <option value="Wife">Wife</option>
+                    <option value="Husband">Husband</option>
+                    <option value="Elder Brother">Elder Brother</option>
+                    <option value="Younger Brother">Younger Brother</option>
+                    <option value="Child">Child</option>
+                    <option value="Grandfather">Grandfather</option>
+                    <option value="Grandmother">Grandmother</option>
+                    <option value="Sibling">Sibling</option>
+                    <option value="Other">Other</option>
+                </select>
+                <button id="btn-save-member" class="btn" onclick="saveNewMember()">Save Profile</button>
+                <button onclick="hideAddMemberForm()" class="back-btn" style="margin-top:15px;">Cancel</button>
+            </div>
+
+            <button type="button" class="back-btn" id="back-to-dash-btn" onclick="window.location.href='{{ url_for('index') }}'">Go to Dashboard</button>
+        </div>
+    </div>
+
+    <div id="step-1" class="step-container">
+        <div class="step-content">
+            <h2>Activity Check</h2>
+            <p>Have you exercised in the last 15 minutes?</p>
+            <div class="mt-4" style="display: flex; flex-direction: column; gap: 12px;">
+                <button id="btn-activity-yes" class="btn btn-outline" onclick="goToStep('step-2')">Yes, I was active</button>
+                <button id="btn-activity-no" class="btn" onclick="goToStep('step-2')">No, I am resting</button>
+            </div>
+            <button class="back-btn" onclick="goToStep('step-family')">Back to Profiles</button>
+        </div>
+    </div>
+
+    <div id="step-2" class="step-container">
+        <div class="step-content">
+            <h2>Calibration</h2>
+            <p>Verify details for accurate analysis.</p>
+            <div style="position: relative;">
+                <input type="text" id="input-city" placeholder="e.g. Surat, Gujarat" autocomplete="off">
+                <ul id="city-suggestions" class="suggestions-list hidden" style="position: absolute;"></ul>
+            </div>
+            <input type="number" id="input-age" placeholder="Age (e.g. 25)">
+            <button id="btn-city-next" class="btn" onclick="goToStep('step-monitor')">Ready to Measure</button>
+            <button class="back-btn" onclick="goToStep('step-1')">Back</button>
+        </div>
+    </div>
+
+    <div id="step-monitor" class="step-container">
+        <div class="monitor-ui">
+            <div class="status-bar">
+                <span id="live-badge">LIVE SENSOR</span>
+                <span id="message-box">Ready</span>
+            </div>
+            <div id="cam-container">
+                <video id="video" autoplay muted playsinline></video>
+                
+                <svg class="progress-ring" width="200" height="200" viewBox="0 0 200 200">
+                    <circle class="ring-bg" cx="100" cy="100" r="90"></circle>
+                    <circle id="ring-fill" class="ring-fill" cx="100" cy="100" r="90"></circle>
+                </svg>
+                
+                <div id="overlay-text" class="overlay-center">
+                    <div id="overlay-label">HOLD</div>
+                    <div id="countdown">GO</div>
+                </div>
+            </div>
+            <div class="graph-container"><canvas id="graph"></canvas></div>
+            <div class="bpm-box">
+                <div id="pre-start-text" style="color:var(--text-muted); font-size:0.9rem;">Place finger gently, just cover the lens</div>
+                <div id="measuring-ui" class="hidden">
+                    <div id="measure-percent" class="measure-percent">0%</div>
+                    <div class="measure-lines"><div id="line-1"></div><div id="line-2"></div><div id="line-3"></div></div>
+                </div>
+            </div>
+            <div style="width:100%; max-width:400px;">
+                <button id="btn-start-measure" class="btn" style="margin-top:10px;">START MEASUREMENT</button>
+            </div>
+            <button class="back-btn" onclick="goToStep('step-2')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="step-5" class="step-container">
+        <div class="step-content">
+            <h2 class="text-center">Analysis Report</h2>
+            <button id="btn-telehealth" class="btn btn-outline" style="display:none;">🧑‍⚕️ Consult Health Coach</button>
+            
+            <p id="report-meta" style="text-align:center; font-size:0.9rem; margin-bottom:30px;"></p>
+            
+            <div id="grid-container">
+                <div class="stat-box">
+                    <div class="stat-label">HEART RATE</div> 
+                    <div class="stat-val" id="res-bpm">--</div>
+                </div>
+                <div class="stat-box" id="aqi-box">
+                    <div class="stat-label" id="res-aqi-label">AIR QUALITY</div> 
+                    <div class="stat-val">
+                        <span id="res-aqi">--</span>
+                        <span class="aqi-unit">AQI</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="impact-container" class="stat-box">
+                <div class="stat-label">POLLUTION IMPACT</div>
+                <div class="impact-badge" id="res-impact-category">Calculating...</div>
+                <div class="impact-sub text-left">Contribution: <span id="res-impact-val" class="impact-val">0%</span></div>
+            </div>
+            
+            <p id="res-msg" class="msg-box msg-cyan"></p>
+            
+            <div id="personal-baseline-box" class="msg-box msg-green" style="display:none;"></div>
+            
+            <div id="hr-explanation" class="msg-box msg-yellow" style="display:none;">
+                <div class="msg-title">⚡ Insight</div>
+                <p id="hr-explanation-text" style="font-size:0.9rem; line-height:1.5; color:#fef08a; margin:0; text-align: left;"></p>
+                <div id="hr-confidence" style="margin-top:10px; font-size:0.75rem; color:rgba(254, 240, 138, 0.7); text-transform:uppercase; letter-spacing:0.5px; text-align: left;"></div>
+            </div>
+            
+            <button id="btn-view-report" class="btn">📄 View Health Report</button>
+            <button id="btn-restart" class="btn btn-outline" onclick="goToStep('step-family')">Start New Scan</button>
+        </div>
+    </div>
+</div>
+
+<div id="ageCityPopup" class="popup-overlay">
+    <div class="popup-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="color:white; font-size:1.3rem; margin:0;">Profile Missing</h3>
+            <span onclick="document.getElementById('medicalInfoBox').style.display='block'" style="cursor:pointer; font-size:1.2rem; opacity:0.8;">ℹ️</span>
+        </div>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:20px; line-height:1.5;">To calculate your heart rate baseline accurately, we need these details.</p>
+        
+        <input type="number" id="popup-age" placeholder="Enter Age">
+        
+        <div class="popup-input-wrapper">
+            <input type="text" id="popup-city" placeholder="Enter City" autocomplete="off">
+            <ul id="popup-city-suggestions" class="suggestions-list popup-suggestions hidden"></ul>
+        </div>
+
+        <button class="btn" onclick="saveAgeCity()" style="margin-top:20px;">Save & Continue</button>
+        <p style="margin-top:15px; font-size:0.8rem; color:#64748b; text-align:center;">You can also update this info anytime in your <a href="{{ url_for('profile') }}" style="color:var(--ring-color); text-decoration:none; font-weight:700;">Profile Page</a>.</p>
+        
+        <div id="medicalInfoBox" class="hidden" style="margin-top:15px; font-size:0.85rem; color:var(--text-light); background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; line-height:1.4;">
+            Your age and location determine "Safe Zones" for your heart rate. Data is not shared.
+            <div style="text-align:right; margin-top:8px;"><button onclick="document.getElementById('medicalInfoBox').style.display='none'" style="background:none;border:none;color:var(--ring-color); font-weight:700;">Close</button></div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+    // --- GLOBAL STATE ---
+    window.HCARE_HR_SAVED = false;
+    window.HCARE_ALERT_SHOWN = false;
+    window.HCARE_MEMBER_ID = localStorage.getItem("HCARE_MEMBER_ID") || null;
+    
+    // Pollution Globals
+    window.currentAqi = 0;
+    window.currentPm25 = 0;
+    window.currentPm10 = 0;
+
+    // --- MAIN NAVIGATION LOGIC ---
+    function goToStep(stepId) {
+        if (stepId !== 'step-monitor') {
+            stopCamera();
+        }
+
+        if (stepId === "step-family") {
+            window.HCARE_HR_SAVED = false;
+        }
+
+        document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
+        const target = document.getElementById(stepId);
+        if(target) target.classList.add('active');
+
+        if (stepId === "step-2") {
+            autofillLocationStep();
+            if (window.HCARE_NEEDS_MEDICAL) {
+                if (!window.HCARE_ALERT_SHOWN) {
+                    window.HCARE_ALERT_SHOWN = true;
+                }
+                setTimeout(showAgeCityPopup, 300);
+            }
+        }
+
+        if (stepId === "step-monitor") {
+            triggerMonitorSetup();
+        }
+    }
+
+    function triggerMonitorSetup() {
+        const city = window.HCARE_CITY || document.getElementById("input-city").value;
+        
+        if (!city) {
+            console.warn("⚠️ No city found, showing popup.");
+            showAgeCityPopup();
+            return;
+        }
+
+        console.log("🚀 Starting Monitor Step. Fetching AQI for:", city);
+        
+        if(typeof fetchAQI === "function") {
+             fetchAQI(city); 
+        }
+        
+        if (typeof fetchRealAQIByCity === "function") {
+             fetchRealAQIByCity(city).then(data => {
+                 if(data) {
+                     console.log("✅ App.js Fetch Success:", data);
+                     window.currentAqi = data.aqi;
+                     window.currentPm25 = data.pm25;
+                     window.currentPm10 = data.pm10;
+                 }
+             });
+        }
+    }
+
+    // --- RING LOGIC: 30s FILLING ANIMATION ---
+    // This function is triggered by app.js during the count
+    window.updateRingProgress = function(timeLeft) {
+        const ring = document.getElementById('ring-fill');
+        if (!ring) return;
+
+        const maxTime = 30; // Total duration in seconds
+        const circumference = 565.48; // Matches CSS var(--ring-len)
+
+        // GUARD CLAUSE:
+        // If timeLeft > 30 (e.g. 3, 2, 1 pre-count) OR undefined, keep ring EMPTY.
+        if (timeLeft > maxTime || timeLeft === undefined) {
+             ring.style.strokeDashoffset = circumference; // Empty
+             return;
+        }
+
+        // FILLING LOGIC (Start Empty -> End Full)
+        // 30s left => offset = C (Empty)
+        // 0s left => offset = 0 (Full)
+        const offset = (timeLeft / maxTime) * circumference;
+
+        ring.style.strokeDashoffset = offset;
+    };
+
+    // --- CAMERA UTILS ---
+    function stopCamera() {
+        const video = document.getElementById('video');
+        if (video && video.srcObject) {
+            const stream = video.srcObject;
+            stream.getTracks().forEach(track => {
+                const capabilities = track.getCapabilities();
+                if (capabilities.torch) {
+                    try { track.applyConstraints({ advanced: [{ torch: false }] }).catch(() => {}); } catch (e) { }
+                }
+                track.stop(); 
+            });
+            video.srcObject = null;
+        }
+    }
+
+    // --- MEMBER MANAGEMENT ---
+    async function loadMembers() {
+        const list = document.getElementById("family-list");
+        const loadingHTML = `
+            <div class="spinner-container">
+                <div class="spinner"></div>
+                <p class="text-muted">Loading profiles...</p>
+            </div>`;
+        
+        if (list.children.length === 0) list.innerHTML = loadingHTML;
+
+        try {
+            const res = await fetch('/api/family-members');
+            let members = await res.json(); 
+            
+            list.innerHTML = ""; 
+
+            if (!members || members.length === 0) {
+                list.innerHTML = `<p style="color:#ef4444;">No profiles found.</p>`;
+                return;
+            }
+
+            members.sort((a, b) => {
+                if (a.relationship.toLowerCase() === 'self') return -1;
+                if (b.relationship.toLowerCase() === 'self') return 1;
+                return 0;
+            });
+
+            members.forEach((m, index) => {
+                const isSelf = m.relationship.toLowerCase() === 'self';
+                const displayName = isSelf ? "You (Self)" : m.name;
+                const displayRelation = isSelf ? m.name : m.relationship;
+                const avatarChar = isSelf ? '❤️' : m.name.charAt(0).toUpperCase();
+                
+                const card = document.createElement("div");
+                card.className = `member-card ${isSelf ? 'is-self' : ''}`;
+                card.style.animationDelay = `${index * 0.1}s`;
+                
+                card.innerHTML = `
+                    <div class="member-avatar"><span>${avatarChar}</span></div>
+                    <div class="member-info">
+                        <div class="member-name">${displayName}</div>
+                        <div class="member-relation">${displayRelation}</div>
+                    </div>
+                    ${!isSelf ? `
+                    <div class="delete-btn" onclick="deleteMember(${m.id}, '${m.name}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </div>` : ''}
+                `;
+
+                card.onclick = (e) => {
+                    if (e.target.closest('.delete-btn')) return;
+                    selectMember(m.id, displayName, m.relationship);
+                };
+
+                list.appendChild(card);
+            });
+
+        } catch (e) { 
+            console.error(e);
+            list.innerHTML = `<p style="color:#ef4444;">Error loading profiles.</p>`;
+        }
+    }
+
+    function selectMember(id, name, relationship) {
+        document.getElementById("selected-member-id").value = id;
+        localStorage.setItem("HCARE_MEMBER_ID", id);
+        localStorage.setItem("HCARE_MEMBER_NAME", name); 
+        
+        if (!relationship) relationship = (name === "{{ current_user.username }}") ? "Self" : "Family Member";
+        localStorage.setItem("HCARE_MEMBER_RELATION", relationship);
+        
+        window.HCARE_MEMBER_ID = id;
+        fetchMemberMedical(id);
+        goToStep('step-1');
+    }
+
+    async function fetchMemberMedical(memberId) {
+        if (!memberId) return;
+        try {
+            const res = await fetch(`/api/member/${memberId}`);
+            const data = await res.json();
+            window.HCARE_AGE = data.age;
+            window.HCARE_CITY = data.city;
+            window.HCARE_NEEDS_MEDICAL = (!data.age || !data.city);
+        } catch(e) { console.error("Medical fetch error", e); }
+    }
+
+    function showAddMemberForm() { 
+        document.getElementById("family-list").classList.add('hidden');
+        document.getElementById("btn-show-add-member").classList.add('hidden');
+        document.getElementById("add-member-form").style.display = "block"; 
+    }
+    
+    function hideAddMemberForm() { 
+        document.getElementById("add-member-form").style.display = "none"; 
+        document.getElementById("family-list").classList.remove('hidden');
+        document.getElementById("btn-show-add-member").classList.remove('hidden');
+    }
+
+    async function saveNewMember() {
+        const name = document.getElementById("new-member-name").value;
+        const relation = document.getElementById("new-member-relation").value;
+        if (!name || !relation) return alert("Fill all fields");
+        
+        try {
+            const response = await fetch('/api/family-members/add', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ name, relationship: relation }) 
+            });
+            const result = await response.json();
+            if (!result.success) throw new Error(result.error || "Unknown");
+            
+            hideAddMemberForm(); 
+            await loadMembers(); 
+        } catch(e) { alert("Error adding member: " + e.message); }
+    }
+
+    async function deleteMember(id, name) {
+        if(confirm("Remove " + name + "?")) {
+            await fetch(`/api/family-members/delete/${id}`, { method: 'DELETE' });
+            loadMembers();
+        }
+    }
+
+    function showAgeCityPopup() {
+        document.getElementById("ageCityPopup").style.display = "flex";
+    }
+
+    function autofillLocationStep() {
+        const cityEl = document.getElementById("input-city");
+        const ageEl = document.getElementById("input-age");
+        if (window.HCARE_CITY && cityEl) cityEl.value = window.HCARE_CITY;
+        if (window.HCARE_AGE && ageEl) ageEl.value = window.HCARE_AGE;
+    }
+
+    async function saveAgeCity() {
+        const ageInput = document.getElementById("popup-age").value;
+        const city = document.getElementById("popup-city").value;
+        const memberId = window.HCARE_MEMBER_ID || localStorage.getItem("HCARE_MEMBER_ID");
+
+        if (!ageInput || !city) return alert("Please fill both Age and City");
+        if (!memberId) return alert("Error: No member selected.");
+
+        try {
+            const res = await fetch("/api/member/update-medical", {
+                method: "POST", 
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ member_id: memberId, age: parseInt(ageInput), city: city })
+            });
+
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error);
+
+            window.HCARE_AGE = parseInt(ageInput);
+            window.HCARE_CITY = city;
+            window.HCARE_NEEDS_MEDICAL = false;
+
+            document.getElementById("input-age").value = window.HCARE_AGE;
+            document.getElementById("input-city").value = window.HCARE_CITY;
+            document.getElementById("ageCityPopup").style.display = "none";
+            
+        } catch (error) {
+            console.error("Save failed:", error);
+            alert("Network error.");
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        setupPopupAutocomplete(); 
+        loadMembers();
+
+        const badge = document.getElementById('live-badge');
+        const statusBar = document.querySelector('.status-bar');
+
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === "attributes" && mutation.attributeName === "style") {
+                    if (badge.style.opacity === '1') {
+                        statusBar.classList.add('mode-measuring');
+                    } else {
+                        statusBar.classList.remove('mode-measuring');
+                    }
+                }
+            });
+        });
+        if(badge) observer.observe(badge, { attributes: true });
+    });
+
+    function setupPopupAutocomplete() {
+        const cityList = [
+          "Ahmedabad","Surat","Vadodara","Rajkot","Gandhinagar","Mumbai","Pune","Nagpur","Nashik","Thane", "Ankleshwar",
+          "Delhi","Noida","Ghaziabad","Faridabad","Gurugram","Bengaluru","Chennai","Hyderabad","Kolkata",
+          "Jaipur","Udaipur","Jodhpur","Ajmer","Kota","Bikaner","Indore","Bhopal","Gwalior","Jabalpur","Ujjain","Sagar",
+          "Lucknow","Kanpur","Varanasi","Prayagraj","Agra","Meerut","Bareilly","Aligarh","Moradabad","Saharanpur",
+          "Bhavnagar","Jamnagar","Junagadh","Porbandar","Anand","Nadiad","Navsari","Valsad","Vapi","Morbi",
+          "Aurangabad","Solapur","Kolhapur","Sangli","Satara","Amravati","Akola","Latur","Nanded","Parbhani",
+          "Coimbatore","Madurai","Tiruchirappalli","Salem","Erode","Vellore","Tirunelveli","Thoothukudi",
+          "Kochi","Thiruvananthapuram","Kozhikode","Thrissur","Mysuru","Mangaluru","Hubballi","Belagavi",
+          "Vijayawada","Guntur","Nellore","Tirupati","Kakinada","Bhubaneswar","Cuttack","Rourkela",
+          "Patna","Gaya","Muzaffarpur","Bhagalpur","Ranchi","Dhanbad","Jamshedpur","Siliguri","Asansol","Durgapur",
+          "Chandigarh","Dehradun","Haridwar","Roorkee","Shimla","Solan","Una","Jammu","Srinagar","Anantnag",
+          "Amritsar","Ludhiana","Jalandhar","Patiala","Bathinda","Guwahati","Silchar","Dibrugarh",
+          "Imphal","Agartala","Aizawl","Kohima","Dimapur","Shillong","Itanagar","Raipur","Bilaspur","Durg",
+          "Panaji","Margao","Port Blair"
+        ];
+
+        attachAutocomplete("input-city", "city-suggestions", cityList);
+        attachAutocomplete("popup-city", "popup-city-suggestions", cityList);
+    }
+
+    function attachAutocomplete(inputId, listId, data) {
+        const input = document.getElementById(inputId);
+        const list = document.getElementById(listId);
+        if(!input || !list) return;
+
+        input.addEventListener("input", function() {
+            const val = this.value.toLowerCase();
+            list.innerHTML = "";
+            
+            if (!val) {
+                list.classList.add('hidden');
+                return;
+            }
+
+            const matches = data.filter(c => c.toLowerCase().startsWith(val));
+            if (matches.length > 0) {
+                matches.forEach(city => {
+                    const li = document.createElement("li");
+                    li.innerText = city;
+                    li.onclick = function() {
+                        input.value = city;
+                        list.classList.add('hidden');
+                    };
+                    list.appendChild(li);
+                });
+                list.classList.remove('hidden');
+                list.style.display = 'block'; 
+            } else {
+                list.classList.add('hidden');
+            }
+        });
+
+        document.addEventListener("click", function(e) {
+            if (e.target !== input && e.target !== list) {
+                list.classList.add('hidden');
+            }
+        });
+    }
+
+</script>
+<script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+{% endblock %}

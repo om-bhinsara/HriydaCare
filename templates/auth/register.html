@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register | HridyaCare</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  /* --- HRIDYACARE GLOBAL THEME --- */
+  --bg-dark: #0f172a;
+  --bg-gradient: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+  
+  --card-bg: #1e293b;
+  --input-bg: #0f172a;
+  --border: rgba(255, 255, 255, 0.08);
+  
+  --primary: #f43f5e; /* Standard App Rose */
+  --primary-glow: rgba(244, 63, 94, 0.4);
+  --primary-hover: #e11d48;
+  
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  
+  --radius-lg: 24px;
+  --radius-md: 12px;
+  --transition: all 0.2s ease;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg-dark);
+  background-image: var(--bg-gradient);
+  color: var(--text-main);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.auth-page {
+  width: 100%;
+  max-width: 480px;
+  z-index: 1;
+}
+
+.auth-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.auth-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 26px;
+  text-align: center;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.auth-title span { color: var(--primary); }
+
+.auth-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+/* Fields & Inputs */
+.field {
+  margin-bottom: 18px;
+  position: relative;
+}
+
+input, select {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 14px;
+  transition: var(--transition);
+  outline: none;
+}
+
+/* Custom styling for Select */
+select {
+  appearance: none;
+  cursor: pointer;
+  color: #cbd5e1; /* Slightly lighter for placeholder feel */
+}
+
+.field.dropdown::after {
+  content: "▾";
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+input:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.15);
+}
+
+/* File Upload Specifics */
+input[type="file"] {
+  padding: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+input[type="file"]::file-selector-button {
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  padding: 6px 12px;
+  border-radius: 8px;
+  margin-right: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: var(--primary);
+  color: white;
+}
+
+/* Password Toggle */
+.password-field {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 14px;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+.toggle-password:hover { color: #fff; }
+
+/* Coach Fields Animation */
+#coach-fields {
+  border-left: 2px solid var(--primary);
+  padding-left: 15px;
+  margin-bottom: 20px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.btn {
+  width: 100%;
+  padding: 15px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-top: 10px;
+  box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);
+}
+
+.btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+.btn:active { transform: translateY(0); }
+
+.auth-link {
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.auth-link a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.auth-link a:hover { text-decoration: underline; }
+
+.auth-alert {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+</style>
+</head>
+
+<body>
+
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-title">❤️ <span>HridyaCare</span></div>
+        <div class="auth-subtitle">Create your account to begin health analysis</div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="auth-alert">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form action="/register" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="field">
+                <input type="text" name="username" placeholder="Username" required>
+            </div>
+
+            <div class="field">
+                <input type="email" name="email" placeholder="Email Address" required>
+            </div>
+
+            <div class="field dropdown">
+                <select name="role" id="role-select" required>
+                    <option value="" disabled selected>Select Account Type</option>
+                    <option value="user">User (Personal Wellness)</option>
+                    <option value="coach">Health Coach (Professional)</option>
+                </select>
+            </div>
+
+            <div id="coach-fields" style="display:none;">
+                <div class="field">
+                    <input type="text" name="qualification" placeholder="Qualification (e.g. MBBS, BPT)">
+                </div>
+                <div class="field">
+                    <input type="text" name="registration_number" placeholder="Medical / Certification Number">
+                </div>
+                <div class="field">
+                    <label style="font-size: 11px; color: var(--text-muted); margin-left: 5px; margin-bottom: 6px; display:block;">Upload Certification (PDF/Image)</label>
+                    <input type="file" name="certificate" accept=".pdf,.jpg,.jpeg,.png">
+                </div>
+            </div>
+
+            <div class="field password-field">
+                <input type="password" name="password" id="register-password" placeholder="Password" required>
+                <span class="toggle-password" onclick="togglePassword('register-password', this)">👁</span>
+            </div>
+
+            <div class="field password-field">
+                <input type="password" name="confirm_password" id="register-confirm" placeholder="Confirm Password" required>
+                <span class="toggle-password" onclick="togglePassword('register-confirm', this)">👁</span>
+            </div>
+
+            <button type="submit" class="btn">Create Account</button>
+        </form>
+
+        <div class="auth-link">
+            Already have an account? <a href="{{ url_for('login') }}">Sign In</a>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePassword(id, icon) {
+    const input = document.getElementById(id);
+    if (input.type === "password") {
+        input.type = "text";
+        icon.textContent = "🙈";
+    } else {
+        input.type = "password";
+        icon.textContent = "👁";
+    }
+}
+
+// Handle Coach Fields Visibility
+const roleSelect = document.getElementById('role-select');
+const coachFields = document.getElementById("coach-fields");
+
+roleSelect.addEventListener("change", function () {
+    if (this.value === "coach") {
+        coachFields.style.display = "block";
+        // Update input required attributes
+        coachFields.querySelectorAll('input').forEach(i => i.required = true);
+    } else {
+        coachFields.style.display = "none";
+        coachFields.querySelectorAll('input').forEach(i => i.required = false);
+    }
+});
+</script>
+
+</body>
+</html>

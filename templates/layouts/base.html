@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}HridyaCare{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* --- 1. HEADER --- */
+        .header {
+            padding-top: 10px !important;    
+            padding-bottom: 10px !important;
+            padding-left: 15px;
+            padding-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(12px);
+            background: rgba(15, 23, 42, 0.85); /* Slightly darker for contrast */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .header-content {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+   /* Find this section in your <style> */
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 8px; 
+    
+    /* CHANGE THIS LINE */
+    font-size: 1.5rem; /* Increased from 1.25rem or 1.6rem */
+    
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+}
+        
+        .brand span {
+            color: #f43f5e; /* Hridya Pink */
+        }
+
+        /* --- HEART ANIMATION (NEW) --- */
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            14% { transform: scale(1.15); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.15); }
+            70% { transform: scale(1); }
+        }
+        
+        .brand-icon {
+            width: 26px;
+            height: 26px;
+            color: #f43f5e;
+            fill: #f43f5e;
+            /* Apply the heartbeat animation */
+            animation: heartbeat 2.5s infinite ease-in-out;
+            transform-origin: center;
+        }
+
+        /* --- INFO BUTTON (SMALLER) --- */
+/* Find this section in your <style> */
+.info-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+    
+    /* CHANGE THESE TWO LINES */
+    width: 20px;  /* Was 28px or 32px */
+    height: 20px; /* Was 28px or 32px */
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(255,255,255,0.6);
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+
+        .info-btn:hover {
+            color: #fff;
+            background: #f43f5e; /* Turns red on hover */
+            border-color: #f43f5e;
+        }
+        
+/* CHANGE THE ICON SIZE INSIDE THE BUTTON */
+.info-btn i {
+    width: 14px;  /* Make the 'i' icon smaller */
+    height: 14px;
+}
+
+        /* --- DASHBOARD --- */
+        .dashboard {
+            padding-bottom: 80px; 
+            padding-top: 15px;
+        }
+
+        /* --- MODAL STYLES --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(6px);
+            z-index: 2000;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .modal-content {
+            background: #1e293b;
+            color: white;
+            padding: 24px;
+            border-radius: 20px;
+            width: 85%;
+            max-width: 380px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.08);
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex; flex-direction: column;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; padding-bottom: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .modal-title { margin: 0; color: #f43f5e; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; }
+        .modal-close { background: none; border: none; color: #64748b; font-size: 28px; cursor: pointer; line-height: 0.8; }
+        .modal-close:hover { color: #fff; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        #infoModal .modal-content > *:last-child { margin-bottom: 0 !important; }
+        #infoModal .modal-content button { margin-top: 20px; margin-bottom: 0 !important; }
+
+        /* --- NAV ACTIVE STATES --- */
+        .bottom-nav .active i {
+            transform: scale(1.15);
+            /* Reddish Glow */
+            filter: drop-shadow(0 0 8px rgba(244, 63, 94, 0.5)); 
+        }
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+
+<div class="header">
+    <div class="header-content">
+<div class="brand" style="gap: 5px;">
+    <i data-lucide="heart" class="brand-icon"></i>
+    
+    Hridya<span style="color: #f43f5e; margin-top: 1.4px; margin-left: -3.5px;">Care</span>
+</div>
+        
+        <button class="info-btn" onclick="toggleInfoModal()">
+            <i data-lucide="info"></i>
+        </button>
+    </div>
+</div>
+
+<div id="infoModal" class="modal-overlay" onclick="toggleInfoModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3 class="modal-title">Page Guide</h3>
+            <button class="modal-close" onclick="toggleInfoModal()">&times;</button>
+        </div>
+        {% block info_popup %}
+            <p style="color: #94a3b8;">Welcome to HridyaCare.</p>
+        {% endblock %}
+    </div>
+</div>
+
+<div class="dashboard">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div style="background:rgba(255,255,255,0.08); padding:12px; border-radius:12px; margin-bottom:20px; color:#e2e8f0; border:1px solid rgba(255,255,255,0.1); font-size: 0.9rem;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}
+    {% endblock %}
+</div>
+
+<nav class="bottom-nav">
+    <a href="{{ url_for('index') }}" class="nav-item home {% if request.endpoint == 'index' %}active{% endif %}">
+        <i data-lucide="home"></i>
+        <span>Home</span>
+    </a>
+
+    <a href="{{ url_for('tracker') }}" class="nav-item tracker {% if request.endpoint == 'tracker' %}active{% endif %}">
+        <i data-lucide="activity"></i>
+        <span>Tracker</span>
+    </a>
+
+    <a href="{{ url_for('health') }}" class="nav-item health {% if request.endpoint == 'health' %}active{% endif %}">
+        <i data-lucide="heart-pulse"></i>
+        <span>Health</span>
+    </a>
+
+    <a href="{{ url_for('profile') }}" class="nav-item profile {% if request.endpoint == 'profile' %}active{% endif %}">
+        <i data-lucide="user"></i>
+        <span>Me</span>
+    </a>
+</nav>
+
+<svg width="0" height="0" style="position: absolute; visibility: hidden;">
+  <defs>
+    <linearGradient id="hridyaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+       <stop offset="0%" stop-color="#fb7185"/> 
+       <stop offset="100%" stop-color="#e11d48"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // 1. Initialize Lucide Icons
+    lucide.createIcons();
+
+    // 2. Apply Reddish Gradient to Footer Icons
+    const navIcons = document.querySelectorAll(".bottom-nav svg");
+    
+    navIcons.forEach((svg) => {
+        const shapes = svg.querySelectorAll('path, circle, line, polyline, rect');
+        shapes.forEach(shape => {
+            // Apply the new red gradient
+            shape.setAttribute("stroke", "url(#hridyaGradient)");
+        });
+    });
+});
+
+function toggleInfoModal() {
+    const modal = document.getElementById('infoModal');
+    if (modal) {
+        if (modal.style.display === "flex") {
+            modal.style.display = "none";
+        } else {
+            modal.style.display = "flex";
+            modal.style.alignItems = "center";
+            modal.style.justifyContent = "center";
+        }
+    }
+}
+</script>
+
+{% block scripts %}{% endblock %}
+
+</body>
+</html>
