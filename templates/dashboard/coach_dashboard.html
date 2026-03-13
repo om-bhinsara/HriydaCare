@@ -384,18 +384,18 @@ margin-bottom:10px;
 <div class="left-column">
 
 <div class="privacy-banner">
-<span>🔒</span>
+<i data-lucide="shield-check"></i>
 <span>Privacy Protocol Active: Patient identity masked. Viewing Age, AQI and Heart Data only.</span>
 </div>
 
 <button class="btn-patients" onclick="togglePatients()">
-<span>👥</span>
+<i data-lucide="users"></i>
 <span>View Patients</span>
 <span id="arrowIcon" class="arrow-icon">▼</span>
 </button>
 
 <div class="card">
-<h3>📊 Restricted Health Data <span id="headerAnonId">· No Patient Selected</span></h3>
+<h3><i data-lucide="activity"></i> Restricted Health Data <span id="headerAnonId">· No Patient Selected</span></h3>
 
 <ul id="vitalsGrid" class="vitals-grid">
 <li class="empty-state" style="grid-column:1/-1;">
@@ -412,11 +412,11 @@ margin-bottom:10px;
 
 <div class="card chat-card">
 
-<h3>💬 Encrypted Consultation Channel</h3>
+<h3><i data-lucide="message-circle"></i> Encrypted Consultation Channel</h3>
 
 <div id="notesContainer" class="notes-scroll">
 <div class="empty-state">
-<div class="empty-state-icon">💬</div>
+<i data-lucide="message-circle"></i>
 <div class="empty-state-text">Chat history will appear here</div>
 </div>
 </div>
@@ -669,7 +669,7 @@ e.preventDefault();
 document.getElementById("saveNoteBtn").click();
 }
 });
-
+lucide.createIcons();
 </script>
 
 </body>
