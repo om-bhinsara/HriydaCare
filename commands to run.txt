@@ -7,3 +7,8 @@ ngrok config add-authtoken 376mBbXvAds98K5veT67vUMGKBD_6YJjuMbcixe4xrKXeVNFn
 ./ngrok.exe http 5000
 
 .\ngrok http 5000 --region=ap
+
+
+git add .
+git commit -m "Description"
+git push origin main
