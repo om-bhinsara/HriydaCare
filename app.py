@@ -445,16 +445,17 @@ class CoachNote(db.Model):
     note = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     seen = db.Column(db.Boolean, default=False)
-
+    
 class ConsultationRequest(db.Model):
     __tablename__ = "consultation_requests"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    coach_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    reason = db.Column(db.String(255))
+    user_id = db.Column(db.Integer)
+    coach_id = db.Column(db.Integer)
+    reason = db.Column(db.Text)
     details = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20))
+    created_at = db.Column(db.DateTime)
 
 class Feedback(db.Model):
     __tablename__ = "feedback"
@@ -586,26 +587,18 @@ def feedback():
     
 @app.route("/api/last-health-summary")
 def last_health_summary():
-    user_id = request.args.get("user_id") or session.get("user_id")
+
+    user_id = request.args.get("user_id", type=int)
+
     if not user_id:
-        return jsonify({"exists": False}), 401
+        return jsonify({"error": "user_id required"}), 400
 
-    selected_member = request.args.get("member_id", type=int)
-
-    # STEP 1: Decide which member to use
-    if not selected_member:
-        return jsonify({"error": "member_id required"}), 400
-        
-
-    # STEP 2: Build query
-    query = HeartRateRecord.query.filter_by(user_id=user_id)
-
-    if selected_member:
-        query = query.filter_by(member_id=selected_member)
-
-
-    # STEP 3: Get latest record
-    record = query.order_by(HeartRateRecord.created_at.desc()).first()
+    record = (
+        HeartRateRecord.query
+        .filter_by(user_id=user_id)
+        .order_by(HeartRateRecord.created_at.desc())
+        .first()
+    )
 
     if not record:
         return jsonify({"exists": False})
@@ -613,7 +606,8 @@ def last_health_summary():
     return jsonify({
         "exists": True,
         "bpm": record.bpm,
-        "timestamp": record.created_at.isoformat()
+        "aqi": record.aqi,
+        "impactCategory": record.impact_category
     })
 
     
@@ -692,32 +686,28 @@ def submit_consultation():
 
     return jsonify({"success": True})
 
-
 @app.route("/api/coach/requests")
 def coach_requests():
+
     if "user_id" not in session:
         return jsonify([])
 
-    requests_list = (
-        ConsultationRequest.query
-        .filter_by(coach_id=session["user_id"])
-        .order_by(ConsultationRequest.created_at.desc())
-        .all()
-    )
+    coach_id = session["user_id"]
 
-    result = []
-    for r in requests_list:
-        user = User.query.get(r.user_id)
-        result.append({
-            "id": r.id,
-            "patient_id": r.user_id,
-            "patient": user.username if user else "Unknown",
+    requests = ConsultationRequest.query.filter_by(
+        coach_id=coach_id
+    ).order_by(ConsultationRequest.created_at.desc()).all()
+
+    data = []
+
+    for r in requests:
+        data.append({
+            "user_id": r.user_id,
             "reason": r.reason,
-            "details": r.details,
-            "created_at": r.created_at.isoformat()
+            "details": r.details
         })
 
-    return jsonify(result)
+    return jsonify(data)
 
 @app.route("/api/telehealth/user-snapshot/<int:user_id>")
 def telehealth_user_snapshot(user_id):
@@ -1827,6 +1817,7 @@ def view_certificate(filename):
 
 @app.route("/api/coach/patient/<int:user_id>")
 def get_patient_details(user_id):
+
     if "user_id" not in session:
         return jsonify({"error": "Unauthorized"}), 401
 
@@ -1834,13 +1825,19 @@ def get_patient_details(user_id):
     if not coach or coach.role != "coach":
         return jsonify({"error": "Forbidden"}), 403
 
-    notes = CoachNote.query.filter_by(user_id=user_id).order_by(CoachNote.created_at.desc()).all()
+    notes = (
+        CoachNote.query
+        .filter_by(user_id=user_id)
+        .order_by(CoachNote.created_at.asc())
+        .all()
+    )
 
     return jsonify({
-        "notes": [
+        "notes":[
             {
-                "note": n.note,
-                "date": n.created_at.strftime("%d %b %Y")
+                "sender":"coach",
+                "note":n.note,
+                "date":n.created_at.strftime("%d %b %Y")
             } for n in notes
         ]
     })
